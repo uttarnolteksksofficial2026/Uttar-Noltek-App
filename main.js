@@ -15,22 +15,20 @@ import {
 } from 'firebase/firestore';
 
 const $ = (s) => document.querySelector(s);
-let confirmation = null, recaptcha = null, currentUser = null, profile = null;
-const app = $('#app');
+let confirmation = null;
+let recaptcha = null;
+let currentUser = null;
+let profile = null;
 
-// আপনার আপলোড করা লোগোর ঠিকানা
+const app = $('#app');
 const logoUrl = '/logo.png';
 
-// লোগোসহ Header
 function shell(content) {
   app.innerHTML = `
     <header>
-      <img
-        src="${logoUrl}"
-        alt="উত্তর নলটেক সমাজ কল্যাণ সংগঠন"
+      <img src="${logoUrl}" alt="সংগঠনের লোগো"
         class="brandmark"
-        style="width:55px;height:55px;object-fit:contain;flex-shrink:0;"
-      >
+        style="width:55px;height:55px;object-fit:contain;flex-shrink:0;">
       <div>
         <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
         <small>একতাই শক্তি · Unity is Strength</small>
@@ -53,37 +51,67 @@ function loginView() {
       <h1>একসাথে গড়ি<br>মানবিক সমাজ</h1>
       <p>সদস্য নিবন্ধন, সংগঠনের খবর এবং সমাজকল্যাণমূলক কার্যক্রম এক জায়গায়।</p>
     </section>
+
     <section class="panel">
       <h2>সদস্য লগইন / নিবন্ধন</h2>
-      <label>বাংলাদেশি মোবাইল নম্বর</label>
-      <input id="phone" placeholder="01XXXXXXXXX" inputmode="tel">
+      <label>বাংলাদেশি অথবা সৌদি মোবাইল নম্বর</label>
+      <input id="phone"
+        placeholder="বাংলাদেশ: 01XXXXXXXXX / সৌদি: 05XXXXXXXX"
+        inputmode="tel">
       <button id="send" class="primary">OTP পাঠান</button>
       <div id="recaptcha-container"></div>
+
       <div id="otpbox" hidden>
         <label>SMS-এ পাওয়া OTP</label>
         <input id="otp" placeholder="৬ সংখ্যার OTP" inputmode="numeric">
         <button id="verify" class="primary">যাচাই করুন</button>
       </div>
-      <p class="hint" id="msg">নম্বরটি +880 ফরম্যাটে যাচাই করা হবে।</p>
+
+      <p class="hint" id="msg">
+        বাংলাদেশ (+880) ও সৌদি আরব (+966) নম্বর ব্যবহার করতে পারবেন।
+      </p>
     </section>
+
     <p class="notice">নিবন্ধনের পর অ্যাডমিন অনুমোদন না দেওয়া পর্যন্ত সদস্যপদ Pending থাকবে।</p>
   `);
+
   $('#send').onclick = sendOtp;
   $('#verify').onclick = verifyOtp;
 }
 
-function phoneFormat(v) {
-  v = v.replace(/[\s-]/g, '');
+function phoneFormat(value) {
+  let v = String(value || '').replace(/[\s()-]/g, '');
+
   if (v.startsWith('+')) return v;
-  if (v.startsWith('880')) return '+' + v;
-  if (v.startsWith('0')) return '+88' + v;
-  return '+880' + v;
+
+  if (v.startsWith('880') || v.startsWith('966')) {
+    return '+' + v;
+  }
+
+  if (/^01\d{9}$/.test(v)) {
+    return '+88' + v;
+  }
+
+  if (/^05\d{8}$/.test(v)) {
+    return '+966' + v.slice(1);
+  }
+
+  if (/^5\d{8}$/.test(v)) {
+    return '+966' + v;
+  }
+
+  return v;
 }
 
 async function sendOtp() {
   const p = phoneFormat($('#phone').value);
-  if (!/^\+8801\d{9}$/.test(p)) {
-    $('#msg').textContent = 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন।';
+
+  const validBangladesh = /^\+8801\d{9}$/.test(p);
+  const validSaudi = /^\+9665\d{8}$/.test(p);
+
+  if (!validBangladesh && !validSaudi) {
+    $('#msg').textContent =
+      'সঠিক বাংলাদেশি (01XXXXXXXXX) অথবা সৌদি (05XXXXXXXX) মোবাইল নম্বর দিন।';
     return;
   }
 
@@ -91,10 +119,15 @@ async function sendOtp() {
 
   try {
     if (!recaptcha) {
-      recaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'normal' });
+      recaptcha = new RecaptchaVerifier(
+        auth,
+        'recaptcha-container',
+        { size: 'normal' }
+      );
     }
 
     confirmation = await signInWithPhoneNumber(auth, p, recaptcha);
+
     $('#otpbox').hidden = false;
     $('#msg').textContent = 'OTP পাঠানো হয়েছে। SMS দেখে কোড লিখুন।';
 
@@ -123,6 +156,7 @@ async function verifyOtp() {
 
 async function loadUser(user) {
   currentUser = user;
+
   const ref = doc(db, 'users', user.uid);
   const snap = await getDoc(ref);
 
@@ -133,6 +167,7 @@ async function loadUser(user) {
       role: 'member',
       createdAt: serverTimestamp()
     };
+
     await setDoc(ref, profile);
     profile = { ...profile };
   } else {
@@ -168,6 +203,7 @@ function pendingView() {
       <button id="out" class="secondary">লগআউট</button>
     </section>
   `);
+
   $('#out').onclick = () => signOut(auth);
 }
 
@@ -175,7 +211,11 @@ async function homeView() {
   let notices = [];
 
   try {
-    const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'), limit(5));
+    const q = query(
+      collection(db, 'notices'),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
     const s = await getDocs(q);
     notices = s.docs.map(d => d.data());
   } catch (e) {
@@ -257,7 +297,12 @@ async function loadQueue() {
   box.innerHTML = '<p>লোড হচ্ছে…</p>';
 
   try {
-    const q = query(collection(db, 'users'), where('status', '==', 'pending'), limit(50));
+    const q = query(
+      collection(db, 'users'),
+      where('status', '==', 'pending'),
+      limit(50)
+    );
+
     const s = await getDocs(q);
 
     box.innerHTML = s.empty
@@ -280,7 +325,11 @@ async function loadQueue() {
 
 async function approve(uid) {
   try {
-    await setDoc(doc(db, 'users', uid), { status: 'approved' }, { merge: true });
+    await setDoc(
+      doc(db, 'users', uid),
+      { status: 'approved' },
+      { merge: true }
+    );
     await loadQueue();
   } catch (e) {
     alert('অনুমোদন করা যায়নি: ' + e.message);
@@ -321,4 +370,3 @@ onAuthStateChanged(auth, user => {
     loginView();
   }
 });
-   
