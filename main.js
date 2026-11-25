@@ -21,3 +21,4 @@ async function loadQueue(){const box=$('#queue');box.innerHTML='<p>লোড হ
 async function approve(uid){try{await setDoc(doc(db,'users',uid),{status:'approved'},{merge:true});await loadQueue();}catch(e){alert('অনুমোদন করা যায়নি: '+e.message);}}
 async function publishNotice(){const title=$('#ntitle').value.trim(),body=$('#nbody').value.trim();if(!title||!body)return alert('শিরোনাম ও বিবরণ লিখুন।');try{await addDoc(collection(db,'notices'),{title,body,createdAt:serverTimestamp(),createdBy:currentUser.uid});alert('নোটিশ প্রকাশিত হয়েছে।');$('#ntitle').value='';$('#nbody').value='';}catch(e){alert('প্রকাশ করা যায়নি: '+e.message);}}
 onAuthStateChanged(auth,user=>{if(user)loadUser(user).catch(e=>shell(`<section class="panel"><p>লোড করতে সমস্যা হয়েছে: ${escapeHtml(e.message)}</p></section>`));else loginView();});
+ 
