@@ -1,1 +1,26 @@
-{"name":"উত্তর নলটেক সমাজ কল্যাণ সংগঠন","short_name":"উত্তর নলটেক","start_url":"/","display":"standalone","background_color":"#f4f8f6","theme_color":"#075b4b","lang":"bn"}
+
+{
+  "name": "উত্তর নলটেক সমাজ কল্যাণ সংগঠন",
+  "short_name": "উত্তর নলটেক",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f8f6",
+  "theme_color": "#075b4b",
+  "lang": "bn",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
