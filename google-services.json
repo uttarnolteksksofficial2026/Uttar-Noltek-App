@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "585478086860",
+    "project_id": "uttar-noltek-social-welfare",
+    "storage_bucket": "uttar-noltek-social-welfare.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:585478086860:android:ca730c94126196e99b6269",
+        "android_client_info": {
+          "package_name": "uttarnalltek.somajkallyan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNArRlUHA3aYrPDqcBHKh2LDiiqGME4c0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
