@@ -884,21 +884,57 @@ body {
   font-size: 15px;
   line-height: 1.8;
 }
-/* Menu text area: white background and clear text */
+/* Keep organization name area dark blue-green */
 .side-drawer .drawer-brand {
-  background: #ffffff !important;
-  color: #173b32 !important;
+  background: #064b8f !important;
+  color: #fff !important;
 }
 
 .side-drawer .drawer-brand b,
 .side-drawer .drawer-brand strong,
 .side-drawer .drawer-brand small,
 .side-drawer .drawer-brand > span {
-  color: #173b32 !important;
+  color: #fff !important;
   opacity: 1 !important;
   text-shadow: none !important;
 }
 
-.side-drawer .drawer-brand {
-  border-bottom: 1px solid #e0eae4 !important;
+/* Make menu navigation area white */
+.side-drawer .drawer-links {
+  background: #fff !important;
+  padding: 16px 10px !important;
+  border-radius: 16px !important;
+  margin-top: 12px !important;
+}
+
+/* Clear, bold menu text */
+.side-drawer .drawer-link {
+  background: #fff !important;
+  color: #064b36 !important;
+  border: 1px solid #e0eae4 !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  min-height: 54px !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* Menu icons */
+.side-drawer .drawer-link .drawer-icon {
+  color: #087653 !important;
+  background: #e7f5ed !important;
+  border: 1px solid #d6f3e2 !important;
+  font-size: 22px !important;
+}
+
+/* Arrow */
+.side-drawer .drawer-link .drawer-arrow {
+  color: #087653 !important;
+}
+
+/* Selected menu item */
+.side-drawer .drawer-link.active {
+  background: #e7f5ed !important;
+  border-color: #087653 !important;
+  color: #064b36 !important;
 }
