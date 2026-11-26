@@ -373,75 +373,7 @@ async function sendOtp() {
     button.disabled = false;
   }
 }
-function loginView() {
-  app.innerHTML = `
-    <header class="app-header">
-      ${logoHTML()}
-      <div class="brand-title">
-        <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
-        <small>একতাই শক্তি · Unity is Strength</small>
-      </div>
-    </header>
-
-    <main class="app-main">
-      <section class="hero">
-        <div class="eyebrow">WELCOME</div>
-        <h1>স্বাগতম</h1>
-        <p>উত্তর নলটেক সমাজ কল্যাণ সংগঠনের সদস্য প্ল্যাটফর্মে আপনাকে স্বাগতম।</p>
-      </section>
-
-      <div class="purpose-card">
-        <div class="purpose-icon">🌿</div>
-        <h2>আমাদের উদ্দেশ্য</h2>
-        <p>
-          মানবতার সেবা, সামাজিক উন্নয়ন এবং মানুষের কল্যাণে
-          একসাথে কাজ করাই আমাদের প্রধান উদ্দেশ্য।
-          অসহায় ও সুবিধাবঞ্চিত মানুষের পাশে দাঁড়ানো,
-          শিক্ষা ও সচেতনতা বৃদ্ধি, সামাজিক সম্প্রীতি প্রতিষ্ঠা
-          এবং একটি সুন্দর, মানবিক সমাজ গড়ে তুলতে
-          আমরা প্রতিশ্রুতিবদ্ধ।
-        </p>
-      </div>
-
-      <section class="panel">
-        <h2 class="heading-blue">সদস্য লগইন</h2>
-        <p class="hint">ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।</p>
-
-        <label for="email">ইমেইল</label>
-        <input id="email" type="email"
-          autocomplete="email"
-          placeholder="আপনার ইমেইল লিখুন">
-
-        <label for="password">পাসওয়ার্ড</label>
-        <input id="password" type="password"
-          autocomplete="current-password"
-          placeholder="পাসওয়ার্ড লিখুন">
-
-        <button class="primary" id="sendOtp" type="button">
-          লগইন করুন
-        </button>
-
-        <button class="secondary" id="registerMember" type="button">
-          নতুন সদস্য অ্যাকাউন্ট খুলুন
-        </button>
-
-        <button class="secondary" id="verifyOtp" type="button">
-          পাসওয়ার্ড ভুলে গেছেন?
-        </button>
-
-        <p class="hint" id="message" role="status" aria-live="polite"></p>
-      </section>
-
-      ${contactHTML()}
-    </main>
-
-    ${footer()}
-  `;
-
-  $('#sendOtp').onclick = sendOtp;
-  $('#registerMember').onclick = registerMember;
-  $('#verifyOtp').onclick = verifyOtp;
-}
+        
 async function verifyOtp() {
   const message = $('#message');
   const button = $('#verifyOtp');
