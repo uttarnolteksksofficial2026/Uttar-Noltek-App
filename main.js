@@ -255,9 +255,9 @@ function loginView() {
 
       <section class="panel">
         <h2 class="heading-blue">সদস্য লগইন</h2>
-        <p class="hint">ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।</p>
+        <p class="hint">আগে অ্যাকাউন্ট থাকলে লগইন করুন।</p>
 
-        <label for="email">ইমেইল</label>
+        <label for="email">Gmail / ইমেইল</label>
         <input id="email" type="email"
           autocomplete="email"
           placeholder="আপনার ইমেইল লিখুন">
@@ -271,12 +271,53 @@ function loginView() {
           লগইন করুন
         </button>
 
-        <button class="secondary" id="registerMember" type="button">
-          নতুন সদস্য অ্যাকাউন্ট খুলুন
-        </button>
-
         <button class="secondary" id="verifyOtp" type="button">
           পাসওয়ার্ড ভুলে গেছেন?
+        </button>
+
+        <hr>
+
+        <h2 class="heading-blue">নতুন সদস্য নিবন্ধন</h2>
+        <p class="hint">সদস্য হতে নিচের তথ্যগুলো পূরণ করুন।</p>
+
+        <label for="fullName">পূর্ণ নাম *</label>
+        <input id="fullName" type="text"
+          autocomplete="name"
+          placeholder="আপনার সম্পূর্ণ নাম">
+
+        <label for="memberPhone">মোবাইল নম্বর *</label>
+        <input id="memberPhone" type="tel"
+          autocomplete="tel"
+          placeholder="মোবাইল নম্বর লিখুন">
+
+        <label for="memberAddress">পূর্ণ ঠিকানা *</label>
+        <textarea id="memberAddress" rows="3"
+          placeholder="গ্রাম, ইউনিয়ন, উপজেলা, জেলা"></textarea>
+
+        <label for="bloodGroup">রক্তের গ্রুপ *</label>
+        <select id="bloodGroup">
+          <option value="">রক্তের গ্রুপ নির্বাচন করুন</option>
+          <option value="A+">A+</option>
+          <option value="A-">A-</option>
+          <option value="B+">B+</option>
+          <option value="B-">B-</option>
+          <option value="AB+">AB+</option>
+          <option value="AB-">AB-</option>
+          <option value="O+">O+</option>
+          <option value="O-">O-</option>
+          <option value="জানা নেই">জানা নেই</option>
+        </select>
+
+        <label for="memberOccupation">পেশা (ঐচ্ছিক)</label>
+        <input id="memberOccupation" type="text"
+          placeholder="আপনার পেশা">
+
+        <p class="hint">
+          নিবন্ধনের জন্য উপরের Gmail ও পাসওয়ার্ডের ঘরও পূরণ করতে হবে।
+        </p>
+
+        <button class="primary" id="registerMember" type="button">
+          নতুন সদস্য অ্যাকাউন্ট খুলুন
         </button>
 
         <p class="hint" id="message" role="status" aria-live="polite"></p>
