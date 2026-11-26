@@ -242,47 +242,31 @@ function loginView() {
   </p>
 </div>
 
-      <section class="panel">
-        <h2 class="heading-blue">সদস্য লগইন</h2>
-        <p class="hint">মোবাইল নম্বরে OTP পাঠিয়ে লগইন করুন।</p>
+      
+<section class="panel">
+  <h2 class="heading-blue">সদস্য লগইন</h2>
+  <p class="hint">ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।</p>
 
-        <label for="phone">মোবাইল নম্বর</label>
-        <input id="phone" type="tel" inputmode="tel"
-          autocomplete="tel"
-          placeholder="01XXXXXXXXX অথবা 05XXXXXXXX">
+  <label for="email">ইমেইল</label>
+  <input id="email" type="email"
+    autocomplete="email"
+    placeholder="আপনার ইমেইল লিখুন">
 
-        <div id="recaptcha-container"></div>
+  <label for="password">পাসওয়ার্ড</label>
+  <input id="password" type="password"
+    autocomplete="current-password"
+    placeholder="পাসওয়ার্ড লিখুন">
 
-        <button class="primary" id="sendOtp" type="button">
-          OTP পাঠান
-        </button>
+  <button class="primary" id="sendOtp" type="button">
+    লগইন করুন
+  </button>
 
-        <div id="otpArea" hidden>
-          <label for="otp">OTP কোড</label>
-          <input id="otp" type="text" inputmode="numeric"
-            autocomplete="one-time-code"
-            maxlength="6" placeholder="৬ সংখ্যার OTP">
+  <button class="secondary" id="verifyOtp" type="button">
+    পাসওয়ার্ড ভুলে গেছেন?
+  </button>
 
-          <button class="primary" id="verifyOtp" type="button">
-            যাচাই করে লগইন করুন
-          </button>
-
-          <button class="secondary" id="resendOtp" type="button">
-            আবার OTP পাঠান
-          </button>
-        </div>
-
-        <p class="hint" id="message" role="status" aria-live="polite"></p>
-      </section>
-
-      ${contactHTML()}
-    </main>
-    ${footer()}`;
-
-  $('#sendOtp').onclick = sendOtp;
-  $('#verifyOtp').onclick = verifyOtp;
-  $('#resendOtp').onclick = sendOtp;
-}
+  <p class="hint" id="message" role="status" aria-live="polite"></p>
+</section>
 
 function resetRecaptcha() {
   const oldContainer = $('#recaptcha-container');
