@@ -5,6 +5,8 @@ import { auth, db } from './firebase.js';
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   signOut
 } from 'firebase/auth';
