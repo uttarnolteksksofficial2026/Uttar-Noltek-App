@@ -358,57 +358,49 @@ async function verifyOtp() {
 
 
 async function loadUser(user) {
-  currentUser = user;alert('আপনার UID: ' + user.uid);
+  currentUser = user;
 
-  const ref = doc(db, 'users', user.uid);
-  let snap = await getDoc(ref);
+  try {
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);
 
-  // UID দিয়ে না পেলে ইমেইল দিয়ে পুরোনো অ্যাকাউন্ট খুঁজবে
-  if (!snap.exists() && user.email) {
-    const q = query(
-      collection(db, 'users'),
-      where('email', '==', user.email)
-    );
-
-    const result = await getDocs(q);
-
-    if (!result.empty) {
-      const oldProfile = result.docs[0].data();
-
+    if (!snap.exists()) {
       await setDoc(ref, {
-        ...oldProfile,
-        email: user.email
+        email: user.email || '',
+        phone: user.phoneNumber || '',
+        status: 'pending',
+        role: 'member',
+        createdAt: serverTimestamp()
       });
 
-      snap = await getDoc(ref);
+      profile = {
+        email: user.email || '',
+        status: 'pending',
+        role: 'member'
+      };
+    } else {
+      profile = snap.data();
     }
+
+    if (profile.status === 'pending') return pendingView();
+    if (profile.status === 'rejected') return rejectedView();
+    if (profile.status !== 'approved') return pendingView();
+
+    if (profile.role === 'admin') return adminView();
+
+    return memberView();
+
+  } catch (error) {
+    console.error(error);
+    app.innerHTML = `
+      <main class="app-main">
+        <h2>তথ্য লোড করা যায়নি</h2>
+        <p>${error.message}</p>
+        <button onclick="location.reload()">আবার চেষ্টা করুন</button>
+        <button onclick="location.reload()">লগইন পেজে ফিরুন</button>
+      </main>
+    `;
   }
-
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      email: user.email || '',
-      phone: user.phoneNumber || '',
-      status: 'pending',
-      role: 'member',
-      createdAt: serverTimestamp()
-    });
-
-    profile = {
-      email: user.email || '',
-      status: 'pending',
-      role: 'member'
-    };
-  } else {
-    profile = snap.data();
-  }alert('Role: ' + profile.role + ' | Status: ' + profile.status);
-
-  if (profile.status === 'pending') return pendingView();
-  if (profile.status === 'rejected') return rejectedView();
-  if (profile.status !== 'approved') return pendingView();
-
-  if (profile.role === 'admin') return adminView();
-
-  return memberView();
 }
 
 function pendingView() {
