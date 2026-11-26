@@ -145,12 +145,61 @@ function bindLogout() {
 
 function contactHTML() {
   return `
-    <section class="panel">
-      <h2 class="heading-blue">যোগাযোগ</h2>
-      <p>মোবাইল: <a href="tel:${contact.phone}">${contact.phone}</a></p>
-      <p>ইমেইল: <a href="mailto:${contact.email}">${contact.email}</a></p>
-      <p><a href="${contact.facebook}" target="_blank" rel="noopener">Facebook পেজ</a></p>
-    </section>`;
+    <section class="panel contact-panel">
+      <h2 class="heading-green">যোগাযোগ করুন</h2>
+
+      <a class="contact-item phone"
+         href="tel:+8801602267423">
+        <span class="contact-icon">📞</span>
+        <span class="contact-details">
+          <strong>কল করুন</strong>
+          <small>+8801602267423</small>
+        </span>
+      </a>
+
+      <a class="contact-item email"
+         href="mailto:uttarnoltek.sks.official2026@gmail.com">
+        <span class="contact-icon">✉️</span>
+        <span class="contact-details">
+          <strong>ইমেল করুন</strong>
+          <small>uttarnoltek.sks.official2026@gmail.com</small>
+        </span>
+      </a>
+
+      <a class="contact-item facebook"
+         href="https://www.facebook.com/share/151EhhMPwC7/"
+         target="_blank"
+         rel="noopener noreferrer">
+
+        <span class="contact-icon facebook-icon">
+          <svg viewBox="0 0 24 24"
+               width="28"
+               height="28"
+               aria-label="Facebook">
+            <path fill="currentColor"
+              d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.02 4.388 11.022 10.125 11.927v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.97h-1.513c-1.49 0-1.956.93-1.956 1.887v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.095 24 18.093 24 12.073Z"/>
+          </svg>
+        </span>
+
+        <span class="contact-details">
+          <strong>অফিসিয়াল ফেসবুক পেজ ভিজিট করুন</strong>
+          <small>আমাদের ফেসবুক পেজ</small>
+        </span>
+      </a>
+
+      <div class="office-address">
+        <div class="office-heading">
+          <span>📍</span>
+          <h3>প্রধান কার্যালয়</h3>
+        </div>
+
+        <p>
+          উত্তর নলটেক, বাঘড়া,<br>
+          শ্রীনগর, মুন্সীগঞ্জ
+        </p>
+      </div>
+    </section>
+  `;
 }
 
 /* LOGIN */
