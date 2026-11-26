@@ -64,9 +64,13 @@ function formatPhone(value) {
 
   throw new Error('সঠিক বাংলাদেশি অথবা সৌদি মোবাইল নম্বর দিন।');
 }
-
 function footer() {
-  return `<footer>মানবতার সেবায় · উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ</footer>`;
+  return `
+    <footer class="organization-footer">
+      <div>মানবতার সেবায়</div>
+      <div>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</div>
+    </footer>
+  `;
 }
 
 function money(amount) {
