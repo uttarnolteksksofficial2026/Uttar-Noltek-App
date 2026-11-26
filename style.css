@@ -1194,3 +1194,32 @@ footer { color: #7b8d82; }
   .panel { padding: 16px; }
   .side-drawer { width: min(330px, 88vw); }
 }
+.app-header,
+.app-main,
+.app-main .panel,
+.app-main .hero,
+.app-main h1,
+.app-main h2,
+.app-main p,
+.app-main label,
+.app-main input,
+.app-main button {
+  opacity: 1 !important;
+  filter: none !important;
+  color: #173b32;
+}
+
+.app-header,
+.app-header * {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.app-main .hero,
+.app-main .hero * {
+  color: #fff;
+}
+
+.app-main .hero .eyebrow {
+  color: #f0d38d;
+}
