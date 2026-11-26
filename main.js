@@ -19,6 +19,7 @@ const $ = s => document.querySelector(s);
 
 let confirmation = null;
 let recaptcha = null;
+let otpSending = false;
 let currentUser = null;
 let profile = null;
 let editingTermId = null;
@@ -264,25 +265,190 @@ function loginView() {
 }
 
 function resetRecaptcha() {
+  const oldContainer = $('#recaptcha-container');
+
   if (recaptcha) {
     try {
       recaptcha.clear();
     } catch (error) {
-      console.warn('reCAPTCHA reset:', error);
+      console.warn('reCAPTCHA clear:', error);
     }
   }
 
   recaptcha = null;
 
-  const container = $('#recaptcha-container');
-  if (container) container.innerHTML = '';
+  // পুরোনো reCAPTCHA HTML পুরোপুরি সরিয়ে নতুন container তৈরি
+  if (oldContainer) {
+    const newContainer = document.createElement('div');
+    newContainer.id = 'recaptcha-container';
+    oldContainer.replaceWith(newContainer);
+  }
 }
 
 async function sendOtp() {
+  if (otpSending) return;
+
+  otpSending = true;
+
   const message = $('#message');
-  const button = $('#sendOtp');
+  const sendButton = $('#sendOtp');
+  const resendButton = $('#resendOtp');
+
+  sendButton.disabled = true;
+  resendButton.disabled = true;
 
   try {
+    const phone = formatPhone($('#phone').value.trim());
+
+    auth.languageCode = 'bn';
+
+    confirmation = null;
+    resetRecaptcha();
+
+    message.textContent = 'নিরাপত্তা যাচাই করা হচ্ছে...';
+
+    recaptcha = new RecaptchaVerifier(
+      auth,
+      $('#recaptcha-container'),
+      {
+        size: 'invisible',
+        callback: () => {
+          message.textContent = 'নিরাপত্তা যাচাই সম্পন্ন।';
+        },
+        'expired-callback': () => {
+          message.textContent =
+            'নিরাপত্তা যাচাইয়ের সময় শেষ হয়েছে। আবার OTP পাঠান।';
+        }
+      }
+    );
+
+    await recaptcha.render();
+
+    message.textContent = 'আপনার নম্বরে OTP পাঠানো হচ্ছে...';
+
+    confirmation = await signInWithPhoneNumber(
+      auth,
+      phone,
+      recaptcha
+    );
+
+    $('#otpArea').hidden = false;
+    $('#otp').value = '';
+    $('#otp').focus();
+
+    message.textContent =
+      'OTP পাঠানো হয়েছে। SMS থেকে ৬ সংখ্যার কোড লিখুন।';
+
+  } catch (error) {
+    console.error('OTP SEND ERROR:', error);
+
+    const errors = {
+      'auth/invalid-phone-number':
+        'মোবাইল নম্বর সঠিক নয়।',
+
+      'auth/too-many-requests':
+        'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।',
+
+      'auth/quota-exceeded':
+        'Firebase-এর SMS সীমা শেষ হয়েছে।',
+
+      'auth/captcha-check-failed':
+        'নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
+
+      'auth/invalid-app-credential':
+        'Firebase reCAPTCHA যাচাই করতে পারেনি। আবার চেষ্টা করুন।',
+
+      'auth/missing-app-credential':
+        'নিরাপত্তা যাচাই সম্পন্ন হয়নি। আবার চেষ্টা করুন।',
+
+      'auth/unauthorized-domain':
+        'ওয়েবসাইটটি Firebase-এ অনুমোদিত নয়।',
+
+      'auth/operation-not-allowed':
+        'Firebase-এ Phone Authentication চালু নেই।',
+
+      'auth/network-request-failed':
+        'ইন্টারনেট সংযোগ পরীক্ষা করুন।',
+
+      'auth/billing-not-enabled':
+        'Firebase-এর বিলিং সেটিংস পরীক্ষা করতে হবে।'
+    };
+
+    message.textContent =
+      errors[error.code] ||
+      'OTP পাঠানো যায়নি: ' +
+      (error.message || 'অজানা সমস্যা');
+
+    confirmation = null;
+    resetRecaptcha();
+
+  } finally {
+    otpSending = false;
+    sendButton.disabled = false;
+    resendButton.disabled = false;
+  }
+}
+
+async function verifyOtp() {
+  const button = $('#verifyOtp');
+  const message = $('#message');
+
+  try {
+    const code = $('#otp').value.trim();
+
+    if (!confirmation) {
+      throw new Error('আগে OTP পাঠান।');
+    }
+
+    if (!/^\d{6}$/.test(code)) {
+      throw new Error('সঠিক ৬ সংখ্যার OTP লিখুন।');
+    }
+
+    button.disabled = true;
+    message.textContent = 'OTP যাচাই করা হচ্ছে...';
+
+    await confirmation.confirm(code);
+
+    message.textContent = 'লগইন সফল হয়েছে।';
+
+    // onAuthStateChanged স্বয়ংক্রিয়ভাবে সদস্যের পেজ খুলবে
+
+  } catch (error) {
+    console.error('OTP VERIFY ERROR:', error);
+
+    const errors = {
+      'auth/invalid-verification-code':
+        'OTP কোড ভুল হয়েছে। আবার লিখুন।',
+
+      'auth/code-expired':
+        'OTP-এর মেয়াদ শেষ হয়েছে। নতুন OTP নিন।',
+
+      'auth/session-expired':
+        'লগইন সেশন শেষ হয়েছে। নতুন OTP নিন।',
+
+      'auth/too-many-requests':
+        'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।'
+    };
+
+    message.textContent =
+      errors[error.code] ||
+      error.message ||
+      'OTP যাচাই করা যায়নি।';
+
+    if (
+      error.code === 'auth/code-expired' ||
+      error.code === 'auth/session-expired'
+    ) {
+      confirmation = null;
+      resetRecaptcha();
+    }
+
+  } finally {
+    button.disabled = false;
+  }
+}
+
+try {
     const phone = formatPhone($('#phone').value.trim());
 
     button.disabled = true;
