@@ -1088,3 +1088,17 @@ footer {
 }footer {
   overflow-wrap: anywhere !important;
 }
+.organization-footer {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  margin: 20px auto 0 !important;
+  padding: 24px 12px !important;
+  color: #064b36 !important;
+  font-weight: 800 !important;
+  line-height: 2 !important;
+}
