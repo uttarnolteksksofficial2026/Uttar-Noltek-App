@@ -10,9 +10,9 @@ import {
 } from 'firebase/auth';
 
 import {
-  doc, getDoc, setDoc, collection, query, where,
+  doc, getDoc, setDoc, collection, where,
   getDocs, orderBy, limit, addDoc, serverTimestamp,
-  updateDoc, deleteDoc
+  updateDoc, deleteDoc, query
 } from 'firebase/firestore';
 
 const $ = s => document.querySelector(s);
@@ -34,10 +34,15 @@ const contact = {
   facebook: 'https://www.facebook.com/share/151EhhMPwC7/'
 };
 
+/* COMMON HELPERS */
+
 function escapeHTML(value = '') {
   return String(value).replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;',
-    '"': '&quot;', "'": '&#39;'
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
   })[c]);
 }
 
@@ -47,10 +52,15 @@ function logoHTML() {
 
 function formatPhone(value) {
   let p = value.replace(/[\s-]/g, '');
+
   if (/^01\d{9}$/.test(p)) return '+88' + p;
   if (/^05\d{8}$/.test(p)) return '+966' + p.slice(1);
   if (/^5\d{8}$/.test(p)) return '+966' + p;
-  if (/^\+8801\d{9}$/.test(p) || /^\+9665\d{8}$/.test(p)) return p;
+
+  if (/^\+8801\d{9}$/.test(p) || /^\+9665\d{8}$/.test(p)) {
+    return p;
+  }
+
   throw new Error('সঠিক বাংলাদেশি অথবা সৌদি মোবাইল নম্বর দিন।');
 }
 
@@ -58,13 +68,35 @@ function footer() {
   return `<footer>মানবতার সেবায় · উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ</footer>`;
 }
 
-/* HEADER */
+function money(amount) {
+  return '৳ ' + Number(amount || 0).toLocaleString('bn-BD');
+}
+
+function sortByOrder(items) {
+  return [...items].sort((a, b) =>
+    Number(a.sortOrder ?? 9999) - Number(b.sortOrder ?? 9999)
+  );
+}
+
+async function getList(name, filters = []) {
+  let q = collection(db, name);
+
+  if (filters.length) {
+    q = query(q, ...filters);
+  }
+
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/* HEADER AND MENU */
 
 function baseHeader() {
   return `
     <header class="app-header">
-      <button class="menu-toggle" id="menuToggle" type="button"
-        aria-label="মেনু খুলুন" aria-expanded="false">☰</button>
+      <button class="menu-toggle" id="menuToggle"
+        type="button" aria-label="মেনু খুলুন"
+        aria-expanded="false">☰</button>
       ${logoHTML()}
       <div class="brand-title">
         <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
@@ -82,6 +114,7 @@ function menuDrawer(items) {
         <span>☰ মেনু</span>
         <button id="closeDrawer" type="button" aria-label="বন্ধ করুন">✕</button>
       </div>
+
       <div class="drawer-brand">
         ${logoHTML()}
         <b>উত্তর নলটেক</b>
@@ -89,6 +122,7 @@ function menuDrawer(items) {
         <small>একতাই শক্তি · Unity is Strength</small>
         <span class="drawer-decoration">✦ মানবতার সেবায় ✦</span>
       </div>
+
       <div class="drawer-links">
         ${items.map(item => `
           <button class="drawer-link" type="button"
@@ -99,6 +133,7 @@ function menuDrawer(items) {
           </button>
         `).join('')}
       </div>
+
       <div class="drawer-footer">মানবতার সেবায় · উত্তর নলটেক</div>
     </aside>`;
 }
@@ -129,31 +164,69 @@ function loginView() {
         <small>একতাই শক্তি · Unity is Strength</small>
       </div>
     </header>
-    <main>
+
+    <main class="app-main">
       <section class="hero">
         <div class="eyebrow">WELCOME</div>
         <h1>স্বাগতম</h1>
         <p>উত্তর নলটেক সমাজ কল্যাণ সংগঠনের সদস্য প্ল্যাটফর্মে আপনাকে স্বাগতম।</p>
       </section>
+
       <section class="panel">
         <h2 class="heading-blue">সদস্য লগইন</h2>
-        <label>মোবাইল নম্বর</label>
-        <input id="phone" type="tel" placeholder="01XXXXXXXXX অথবা 05XXXXXXXX">
+        <p class="hint">মোবাইল নম্বরে OTP পাঠিয়ে লগইন করুন।</p>
+
+        <label for="phone">মোবাইল নম্বর</label>
+        <input id="phone" type="tel" inputmode="tel"
+          autocomplete="tel"
+          placeholder="01XXXXXXXXX অথবা 05XXXXXXXX">
+
         <div id="recaptcha-container"></div>
-        <button class="primary" id="sendOtp" type="button">OTP পাঠান</button>
+
+        <button class="primary" id="sendOtp" type="button">
+          OTP পাঠান
+        </button>
+
         <div id="otpArea" hidden>
-          <label>OTP কোড</label>
-          <input id="otp" inputmode="numeric" maxlength="6" placeholder="৬ সংখ্যার কোড">
-          <button class="primary" id="verifyOtp" type="button">যাচাই করুন</button>
+          <label for="otp">OTP কোড</label>
+          <input id="otp" type="text" inputmode="numeric"
+            autocomplete="one-time-code"
+            maxlength="6" placeholder="৬ সংখ্যার OTP">
+
+          <button class="primary" id="verifyOtp" type="button">
+            যাচাই করে লগইন করুন
+          </button>
+
+          <button class="secondary" id="resendOtp" type="button">
+            আবার OTP পাঠান
+          </button>
         </div>
-        <p class="hint" id="message"></p>
+
+        <p class="hint" id="message" role="status" aria-live="polite"></p>
       </section>
+
       ${contactHTML()}
     </main>
     ${footer()}`;
 
   $('#sendOtp').onclick = sendOtp;
   $('#verifyOtp').onclick = verifyOtp;
+  $('#resendOtp').onclick = sendOtp;
+}
+
+function resetRecaptcha() {
+  if (recaptcha) {
+    try {
+      recaptcha.clear();
+    } catch (error) {
+      console.warn('reCAPTCHA reset:', error);
+    }
+  }
+
+  recaptcha = null;
+
+  const container = $('#recaptcha-container');
+  if (container) container.innerHTML = '';
 }
 
 async function sendOtp() {
@@ -162,37 +235,100 @@ async function sendOtp() {
 
   try {
     const phone = formatPhone($('#phone').value.trim());
-    button.disabled = true;
-    message.textContent = 'OTP পাঠানো হচ্ছে...';
 
-    if (!recaptcha) {
-      recaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'normal'
-      });
-      await recaptcha.render();
-    }
+    button.disabled = true;
+    $('#resendOtp').disabled = true;
+    message.textContent = 'নিরাপত্তা যাচাই করা হচ্ছে...';
+
+    resetRecaptcha();
+
+    recaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      size: 'invisible',
+      callback: () => {
+        message.textContent = 'নিরাপত্তা যাচাই সম্পন্ন।';
+      },
+      'expired-callback': () => {
+        message.textContent = 'নিরাপত্তা যাচাইয়ের সময় শেষ হয়েছে। আবার চেষ্টা করুন।';
+        resetRecaptcha();
+      }
+    });
+
+    await recaptcha.render();
+
+    message.textContent = 'আপনার নম্বরে OTP পাঠানো হচ্ছে...';
 
     confirmation = await signInWithPhoneNumber(auth, phone, recaptcha);
+
     $('#otpArea').hidden = false;
-    message.textContent = 'OTP পাঠানো হয়েছে। কোড লিখুন।';
+    $('#otp').value = '';
+    $('#otp').focus();
+
+    message.textContent = 'OTP পাঠানো হয়েছে। SMS থেকে ৬ সংখ্যার কোড লিখুন।';
+
   } catch (error) {
-    console.error(error);
-    message.textContent = error.message || 'OTP পাঠানো যায়নি।';
+    console.error('OTP SEND ERROR:', error);
+
+    const errors = {
+      'auth/invalid-phone-number': 'মোবাইল নম্বর সঠিক নয়।',
+      'auth/too-many-requests': 'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।',
+      'auth/quota-exceeded': 'Firebase-এর SMS সীমা শেষ হয়েছে।',
+      'auth/captcha-check-failed': 'নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
+      'auth/unauthorized-domain': 'এই ওয়েবসাইট Firebase-এ অনুমোদিত নয়।',
+      'auth/operation-not-allowed': 'Firebase-এ Phone Authentication চালু নেই।',
+      'auth/network-request-failed': 'ইন্টারনেট সংযোগ পরীক্ষা করুন।',
+      'auth/billing-not-enabled': 'Firebase-এর প্রয়োজনীয় বিলিং সেটিংস চালু নেই।'
+    };
+
+    message.textContent =
+      errors[error.code] ||
+      'OTP পাঠানো যায়নি: ' + (error.message || 'অজানা সমস্যা');
+
+    confirmation = null;
+    resetRecaptcha();
+
+  } finally {
     button.disabled = false;
+    $('#resendOtp').disabled = false;
   }
 }
 
 async function verifyOtp() {
+  const button = $('#verifyOtp');
+  const message = $('#message');
+
   try {
     const code = $('#otp').value.trim();
-    if (!confirmation || !code) throw new Error('OTP কোড লিখুন।');
 
-    $('#verifyOtp').disabled = true;
+    if (!confirmation) {
+      throw new Error('আগে OTP পাঠান।');
+    }
+
+    if (!/^\d{6}$/.test(code)) {
+      throw new Error('সঠিক ৬ সংখ্যার OTP লিখুন।');
+    }
+
+    button.disabled = true;
+    message.textContent = 'OTP যাচাই করা হচ্ছে...';
+
     await confirmation.confirm(code);
+
+    message.textContent = 'লগইন সফল হয়েছে।';
+
   } catch (error) {
-    console.error(error);
-    $('#message').textContent = 'OTP সঠিক নয় অথবা মেয়াদ শেষ হয়েছে।';
-    $('#verifyOtp').disabled = false;
+    console.error('OTP VERIFY ERROR:', error);
+
+    const errors = {
+      'auth/invalid-verification-code': 'OTP কোড ভুল হয়েছে। আবার লিখুন।',
+      'auth/code-expired': 'OTP-এর মেয়াদ শেষ হয়েছে। নতুন OTP নিন।',
+      'auth/session-expired': 'লগইন সেশন শেষ হয়েছে। নতুন OTP নিন।',
+      'auth/too-many-requests': 'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।'
+    };
+
+    message.textContent =
+      errors[error.code] || error.message || 'OTP যাচাই করা যায়নি।';
+
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -200,6 +336,7 @@ async function verifyOtp() {
 
 async function loadUser(user) {
   currentUser = user;
+
   const ref = doc(db, 'users', user.uid);
   const snap = await getDoc(ref);
 
@@ -238,6 +375,7 @@ function pendingView() {
       </section>
     </main>
     ${footer()}`;
+
   bindLogout();
 }
 
@@ -251,27 +389,8 @@ function rejectedView() {
       ${contactHTML()}
     </main>
     ${footer()}`;
+
   bindLogout();
-}
-
-/* COMMON */
-
-async function getList(name, filters = []) {
-  let q = collection(db, name);
-  if (filters.length) q = query(q, ...filters);
-
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-
-function money(amount) {
-  return '৳ ' + Number(amount || 0).toLocaleString('bn-BD');
-}
-
-function sortByOrder(items) {
-  return [...items].sort((a, b) =>
-    Number(a.sortOrder ?? 9999) - Number(b.sortOrder ?? 9999)
-  );
 }
 
 /* NAVIGATION */
@@ -341,14 +460,38 @@ function bottomNavigation(items) {
 
 function defaultRules() {
   return [
-    { title: '১. সদস্যপদ', body: 'সংগঠনের উদ্দেশ্য ও আদর্শের প্রতি শ্রদ্ধাশীল হতে হবে। সঠিক তথ্য দিয়ে সদস্যপদের আবেদন করতে হবে। অ্যাডমিনের অনুমোদনের পর সদস্যপদ কার্যকর হবে।' },
-    { title: '২. মাসিক চাঁদা', body: 'প্রত্যেক সদস্যকে সাধারণ সভায় নির্ধারিত মাসিক চাঁদা প্রদান করতে হবে। জমা দেওয়ার পর ডিজিটাল রশিদ সংগ্রহ করতে হবে।' },
-    { title: '৩. আর্থিক স্বচ্ছতা', body: 'সংগঠনের সব আয় ও ব্যয়ের হিসাব সংরক্ষণ করতে হবে। সংগঠনের অর্থ ব্যক্তিগত কাজে ব্যবহার করা যাবে না।' },
-    { title: '৪. সদস্যদের দায়িত্ব', body: 'সংগঠনের সভা ও সামাজিক কার্যক্রমে অংশগ্রহণ করতে হবে। অন্য সদস্যদের সঙ্গে সম্মানজনক আচরণ করতে হবে।' },
-    { title: '৫. সভা ও সিদ্ধান্ত', body: 'সংগঠনের সভায় গৃহীত সিদ্ধান্ত মেনে চলতে হবে। গুরুত্বপূর্ণ সিদ্ধান্ত অনুমোদিত কর্তৃপক্ষের মাধ্যমে গ্রহণ করতে হবে।' },
-    { title: '৬. শৃঙ্খলা', body: 'প্রতারণা, অসদাচরণ ও আর্থিক অনিয়ম গ্রহণযোগ্য হবে না। অভিযোগের ক্ষেত্রে আত্মপক্ষ সমর্থনের সুযোগ দিতে হবে।' },
-    { title: '৭. সদস্যপদ স্থগিত বা বাতিল', body: 'গুরুতর নিয়মভঙ্গের ক্ষেত্রে তদন্ত ও আত্মপক্ষ সমর্থনের সুযোগ দেওয়ার পর কর্তৃপক্ষ ব্যবস্থা নিতে পারবে।' },
-    { title: '৮. চূড়ান্ত বিধান', body: 'সংগঠনের কল্যাণে প্রয়োজন হলে সাধারণ সভার অনুমোদনে নিয়মাবলি সংশোধন করা যাবে।' }
+    {
+      title: '১. সদস্যপদ',
+      body: 'সংগঠনের উদ্দেশ্য ও আদর্শের প্রতি শ্রদ্ধাশীল হতে হবে। সঠিক তথ্য দিয়ে সদস্যপদের আবেদন করতে হবে। অ্যাডমিনের অনুমোদনের পর সদস্যপদ কার্যকর হবে।'
+    },
+    {
+      title: '২. মাসিক চাঁদা',
+      body: 'প্রত্যেক সদস্যকে সাধারণ সভায় নির্ধারিত মাসিক চাঁদা প্রদান করতে হবে। জমা দেওয়ার পর ডিজিটাল রশিদ সংগ্রহ করতে হবে।'
+    },
+    {
+      title: '৩. আর্থিক স্বচ্ছতা',
+      body: 'সংগঠনের সব আয় ও ব্যয়ের হিসাব সংরক্ষণ করতে হবে। সংগঠনের অর্থ ব্যক্তিগত কাজে ব্যবহার করা যাবে না।'
+    },
+    {
+      title: '৪. সদস্যদের দায়িত্ব',
+      body: 'সংগঠনের সভা ও সামাজিক কার্যক্রমে অংশগ্রহণ করতে হবে। অন্য সদস্যদের সঙ্গে সম্মানজনক আচরণ করতে হবে।'
+    },
+    {
+      title: '৫. সভা ও সিদ্ধান্ত',
+      body: 'সংগঠনের সভায় গৃহীত সিদ্ধান্ত মেনে চলতে হবে। গুরুত্বপূর্ণ সিদ্ধান্ত অনুমোদিত কর্তৃপক্ষের মাধ্যমে গ্রহণ করতে হবে।'
+    },
+    {
+      title: '৬. শৃঙ্খলা',
+      body: 'প্রতারণা, অসদাচরণ ও আর্থিক অনিয়ম গ্রহণযোগ্য হবে না। অভিযোগের ক্ষেত্রে আত্মপক্ষ সমর্থনের সুযোগ দিতে হবে।'
+    },
+    {
+      title: '৭. সদস্যপদ স্থগিত বা বাতিল',
+      body: 'গুরুতর নিয়মভঙ্গের ক্ষেত্রে তদন্ত ও আত্মপক্ষ সমর্থনের সুযোগ দেওয়ার পর কর্তৃপক্ষ ব্যবস্থা নিতে পারবে।'
+    },
+    {
+      title: '৮. চূড়ান্ত বিধান',
+      body: 'সংগঠনের কল্যাণে প্রয়োজন হলে সাধারণ সভার অনুমোদনে নিয়মাবলি সংশোধন করা যাবে।'
+    }
   ];
 }
 
@@ -378,96 +521,144 @@ async function loadMemberRules() {
 
 function defaultConstitution() {
   return [
-    { title: 'প্রথম অধ্যায় — নাম, পরিচয় ও কার্যালয়', body: `ধারা ১: সংগঠনের নাম হবে “উত্তর নলটেক সমাজ কল্যাণ সংগঠন”।
+    {
+      title: 'প্রথম অধ্যায় — নাম, পরিচয় ও কার্যালয়',
+      body: `ধারা ১: সংগঠনের নাম হবে “উত্তর নলটেক সমাজ কল্যাণ সংগঠন”।
 ধারা ২: সংগঠনটি অরাজনৈতিক, অলাভজনক, স্বেচ্ছাসেবী ও সমাজকল্যাণমূলক প্রতিষ্ঠান হিসেবে পরিচালিত হবে।
 ধারা ৩: সংগঠনের প্রধান কার্যক্ষেত্র উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ।
 ধারা ৪: সংগঠনের কার্যালয়ের ঠিকানা সাধারণ সভার সিদ্ধান্ত অনুযায়ী নির্ধারিত ও পরিবর্তিত হতে পারবে।
-ধারা ৫: প্রযোজ্য হলে নিবন্ধন নম্বর ও নিবন্ধনের তারিখ: [প্রযোজ্য ক্ষেত্রে পূরণ করতে হবে]।` },
-    { title: 'দ্বিতীয় অধ্যায় — লক্ষ্য ও উদ্দেশ্য', body: `ধারা ১: এলাকার দরিদ্র, অসহায়, অসুস্থ ও বিপদগ্রস্ত মানুষের পাশে দাঁড়ানো।
+ধারা ৫: প্রযোজ্য হলে নিবন্ধন নম্বর ও নিবন্ধনের তারিখ: [প্রযোজ্য ক্ষেত্রে পূরণ করতে হবে]।`
+    },
+    {
+      title: 'দ্বিতীয় অধ্যায় — লক্ষ্য ও উদ্দেশ্য',
+      body: `ধারা ১: এলাকার দরিদ্র, অসহায়, অসুস্থ ও বিপদগ্রস্ত মানুষের পাশে দাঁড়ানো।
 ধারা ২: দরিদ্র ও মেধাবী শিক্ষার্থীদের শিক্ষা সহায়তা প্রদান।
 ধারা ৩: অসুস্থ ও অসচ্ছল মানুষের চিকিৎসা সহায়তায় উদ্যোগ গ্রহণ।
 ধারা ৪: বন্যা, অগ্নিকাণ্ড, প্রাকৃতিক দুর্যোগ ও জরুরি পরিস্থিতিতে ত্রাণ সহায়তা প্রদান।
 ধারা ৫: সামাজিক সম্প্রীতি, ঐক্য, মানবিকতা ও ভ্রাতৃত্ববোধ প্রতিষ্ঠা।
 ধারা ৬: পরিবেশ সংরক্ষণ, পরিচ্ছন্নতা ও জনসচেতনতামূলক কার্যক্রম পরিচালনা।
-ধারা ৭: এলাকার সামগ্রিক উন্নয়নে বৈধ ও জনকল্যাণমূলক উদ্যোগ গ্রহণ।` },
-    { title: 'তৃতীয় অধ্যায় — সদস্যপদ', body: `ধারা ১: সংগঠনের লক্ষ্য ও উদ্দেশ্যের প্রতি শ্রদ্ধাশীল ব্যক্তি সদস্য হওয়ার আবেদন করতে পারবেন।
+ধারা ৭: এলাকার সামগ্রিক উন্নয়নে বৈধ ও জনকল্যাণমূলক উদ্যোগ গ্রহণ।`
+    },
+    {
+      title: 'তৃতীয় অধ্যায় — সদস্যপদ',
+      body: `ধারা ১: সংগঠনের লক্ষ্য ও উদ্দেশ্যের প্রতি শ্রদ্ধাশীল ব্যক্তি সদস্য হওয়ার আবেদন করতে পারবেন।
 ধারা ২: আবেদনকারীকে নির্ধারিত আবেদনপত্রে সঠিক তথ্য প্রদান করতে হবে।
 ধারা ৩: নির্ধারিত যাচাই ও অনুমোদনের পর সদস্যপদ কার্যকর হবে।
 ধারা ৪: সদস্যের ধরন, যোগ্যতা, চাঁদা ও অন্যান্য শর্ত সাধারণ সভায় নির্ধারিত হবে।
 ধারা ৫: সদস্যপদ স্বেচ্ছায় লিখিত আবেদনের মাধ্যমে ত্যাগ করা যাবে।
-ধারা ৬: সদস্যপদের তথ্য সংগঠনের নথিতে সংরক্ষণ করতে হবে।` },
-    { title: 'চতুর্থ অধ্যায় — সদস্যদের অধিকার', body: `ধারা ১: প্রত্যেক অনুমোদিত সদস্য সংগঠনের কার্যক্রমে অংশগ্রহণ করতে পারবেন।
+ধারা ৬: সদস্যপদের তথ্য সংগঠনের নথিতে সংরক্ষণ করতে হবে।`
+    },
+    {
+      title: 'চতুর্থ অধ্যায় — সদস্যদের অধিকার',
+      body: `ধারা ১: প্রত্যেক অনুমোদিত সদস্য সংগঠনের কার্যক্রমে অংশগ্রহণ করতে পারবেন।
 ধারা ২: সভায় মতামত, প্রস্তাব ও গঠনমূলক সমালোচনা উপস্থাপন করতে পারবেন।
 ধারা ৩: অনুমোদিত পদ্ধতিতে সংগঠনের হিসাব ও কার্যক্রম সম্পর্কে তথ্য জানতে পারবেন।
 ধারা ৪: গঠনতন্ত্র ও নিয়ম অনুযায়ী নির্বাচনে অংশগ্রহণ ও ভোটাধিকার প্রয়োগ করতে পারবেন।
-ধারা ৫: অভিযোগ বা আপিল উপস্থাপনের ন্যায্য সুযোগ পাবেন।` },
-    { title: 'পঞ্চম অধ্যায় — সদস্যদের দায়িত্ব ও আচরণ', body: `ধারা ১: সংগঠনের গঠনতন্ত্র, নিয়ম ও বৈধ সিদ্ধান্ত মেনে চলতে হবে।
+ধারা ৫: অভিযোগ বা আপিল উপস্থাপনের ন্যায্য সুযোগ পাবেন।`
+    },
+    {
+      title: 'পঞ্চম অধ্যায় — সদস্যদের দায়িত্ব ও আচরণ',
+      body: `ধারা ১: সংগঠনের গঠনতন্ত্র, নিয়ম ও বৈধ সিদ্ধান্ত মেনে চলতে হবে।
 ধারা ২: সংগঠনের সুনাম, সম্পদ ও গোপনীয়তা রক্ষা করতে হবে।
 ধারা ৩: অন্য সদস্য ও উপকারভোগীদের সঙ্গে সম্মানজনক আচরণ করতে হবে।
 ধারা ৪: সামর্থ্য ও নির্ধারিত নিয়ম অনুযায়ী চাঁদা প্রদান করতে হবে।
 ধারা ৫: সংগঠনের নামে ব্যক্তিগত সুবিধা গ্রহণ, প্রতারণা বা বিভ্রান্তিকর প্রচার করা যাবে না।
-ধারা ৬: ধর্ম, বর্ণ, লিঙ্গ, আর্থিক অবস্থা বা ব্যক্তিগত পরিচয়ের ভিত্তিতে বৈষম্য করা যাবে না।` },
-    { title: 'ষষ্ঠ অধ্যায় — সাধারণ পরিষদ', body: `ধারা ১: সংগঠনের অনুমোদিত সকল সদস্য নিয়ে সাধারণ পরিষদ গঠিত হবে।
+ধারা ৬: ধর্ম, বর্ণ, লিঙ্গ, আর্থিক অবস্থা বা ব্যক্তিগত পরিচয়ের ভিত্তিতে বৈষম্য করা যাবে না।`
+    },
+    {
+      title: 'ষষ্ঠ অধ্যায় — সাধারণ পরিষদ',
+      body: `ধারা ১: সংগঠনের অনুমোদিত সকল সদস্য নিয়ে সাধারণ পরিষদ গঠিত হবে।
 ধারা ২: সাধারণ পরিষদ সংগঠনের সর্বোচ্চ নীতিনির্ধারণী সভা হিসেবে কাজ করবে।
 ধারা ৩: গঠনতন্ত্র অনুমোদন, সংশোধন, কমিটি নির্বাচন, বার্ষিক প্রতিবেদন ও গুরুত্বপূর্ণ নীতিগত সিদ্ধান্ত সাধারণ পরিষদ গ্রহণ করবে।
 ধারা ৪: সাধারণ সভার সময়, নোটিশ, উপস্থিতি ও কোরামের নিয়ম সভায় অনুমোদিত হবে।
-ধারা ৫: সভার সিদ্ধান্ত ও কার্যবিবরণী লিখিতভাবে সংরক্ষণ করতে হবে।` },
-    { title: 'সপ্তম অধ্যায় — কার্যনির্বাহী কমিটি', body: `ধারা ১: সংগঠনের দৈনন্দিন কার্যক্রম পরিচালনার জন্য কার্যনির্বাহী কমিটি থাকবে।
+ধারা ৫: সভার সিদ্ধান্ত ও কার্যবিবরণী লিখিতভাবে সংরক্ষণ করতে হবে।`
+    },
+    {
+      title: 'সপ্তম অধ্যায় — কার্যনির্বাহী কমিটি',
+      body: `ধারা ১: সংগঠনের দৈনন্দিন কার্যক্রম পরিচালনার জন্য কার্যনির্বাহী কমিটি থাকবে।
 ধারা ২: কমিটিতে সভাপতি, সহ-সভাপতি, সাধারণ সম্পাদক, যুগ্ম সম্পাদক, সাংগঠনিক সম্পাদক, অর্থ সম্পাদক এবং প্রয়োজনীয় অন্যান্য পদ থাকতে পারবে।
 ধারা ৩: কমিটির সুনির্দিষ্ট পদসংখ্যা, সদস্যসংখ্যা ও দায়িত্ব সাধারণ সভায় অনুমোদিত হবে।
 ধারা ৪: কমিটির মেয়াদ সাধারণ সভায় নির্ধারিত হবে এবং অনুমোদিত কার্যবিবরণীতে লিপিবদ্ধ থাকবে।
-ধারা ৫: কমিটি সাধারণ পরিষদের কাছে জবাবদিহি করবে।` },
-    { title: 'অষ্টম অধ্যায় — পদাধিকারীদের দায়িত্ব', body: `ধারা ১: সভাপতি সংগঠনের সার্বিক নেতৃত্ব দেবেন এবং সভায় সভাপতিত্ব করবেন।
+ধারা ৫: কমিটি সাধারণ পরিষদের কাছে জবাবদিহি করবে।`
+    },
+    {
+      title: 'অষ্টম অধ্যায় — পদাধিকারীদের দায়িত্ব',
+      body: `ধারা ১: সভাপতি সংগঠনের সার্বিক নেতৃত্ব দেবেন এবং সভায় সভাপতিত্ব করবেন।
 ধারা ২: সহ-সভাপতি সভাপতিকে সহযোগিতা করবেন এবং অনুপস্থিতিতে অনুমোদিতভাবে দায়িত্ব পালন করবেন।
 ধারা ৩: সাধারণ সম্পাদক প্রশাসনিক কাজ, সভা আহ্বান ও সিদ্ধান্ত বাস্তবায়ন সমন্বয় করবেন।
 ধারা ৪: যুগ্ম সম্পাদক সাধারণ সম্পাদককে সহযোগিতা করবেন।
 ধারা ৫: সাংগঠনিক সম্পাদক সদস্য ও সাংগঠনিক কার্যক্রম সমন্বয় করবেন।
 ধারা ৬: অর্থ সম্পাদক আয়-ব্যয়ের হিসাব, রসিদ ও আর্থিক নথি সংরক্ষণ করবেন।
-ধারা ৭: অন্যান্য পদাধিকারী কমিটির সিদ্ধান্ত অনুযায়ী দায়িত্ব পালন করবেন।` },
-    { title: 'নবম অধ্যায় — সভা, কোরাম ও সিদ্ধান্ত', body: `ধারা ১: প্রয়োজন অনুযায়ী কার্যনির্বাহী কমিটির সভা অনুষ্ঠিত হবে।
+ধারা ৭: অন্যান্য পদাধিকারী কমিটির সিদ্ধান্ত অনুযায়ী দায়িত্ব পালন করবেন।`
+    },
+    {
+      title: 'নবম অধ্যায় — সভা, কোরাম ও সিদ্ধান্ত',
+      body: `ধারা ১: প্রয়োজন অনুযায়ী কার্যনির্বাহী কমিটির সভা অনুষ্ঠিত হবে।
 ধারা ২: বছরে অন্তত একবার সাধারণ সভা আয়োজনের উদ্যোগ নিতে হবে।
 ধারা ৩: সভার তারিখ, সময়, স্থান ও আলোচ্যসূচি সদস্যদের যথাসময়ে জানাতে হবে।
 ধারা ৪: সভার কোরাম সাধারণ সভায় অনুমোদিত নিয়ম অনুযায়ী নির্ধারিত হবে।
 ধারা ৫: সিদ্ধান্ত গ্রহণে প্রথমে ঐকমত্যের চেষ্টা করতে হবে; প্রয়োজনে উপস্থিত ভোটাধিকারপ্রাপ্ত সদস্যদের সংখ্যাগরিষ্ঠ মত গ্রহণ করা হবে।
-ধারা ৬: গুরুত্বপূর্ণ সিদ্ধান্ত কার্যবিবরণীতে লিখে রাখতে হবে।` },
-    { title: 'দশম অধ্যায় — অর্থ, তহবিল ও অনুদান', body: `ধারা ১: সদস্য চাঁদা, স্বেচ্ছা অনুদান, বৈধ অনুদান ও আইনসম্মত অন্যান্য উৎস থেকে তহবিল গঠিত হবে।
+ধারা ৬: গুরুত্বপূর্ণ সিদ্ধান্ত কার্যবিবরণীতে লিখে রাখতে হবে।`
+    },
+    {
+      title: 'দশম অধ্যায় — অর্থ, তহবিল ও অনুদান',
+      body: `ধারা ১: সদস্য চাঁদা, স্বেচ্ছা অনুদান, বৈধ অনুদান ও আইনসম্মত অন্যান্য উৎস থেকে তহবিল গঠিত হবে।
 ধারা ২: সকল অর্থ সংগঠনের অনুমোদিত জনকল্যাণমূলক কাজে ব্যয় করতে হবে।
 ধারা ৩: কোনো সদস্য বা কর্মকর্তা সংগঠনের অর্থ ব্যক্তিগতভাবে আত্মসাৎ বা ব্যক্তিগত কাজে ব্যবহার করতে পারবেন না।
 ধারা ৪: প্রতিটি আয় ও ব্যয়ের রসিদ, ভাউচার বা উপযুক্ত প্রমাণ সংরক্ষণ করতে হবে।
 ধারা ৫: অর্থ ব্যয়ের ক্ষেত্রে অনুমোদিত সিদ্ধান্ত ও আর্থিক নিয়ন্ত্রণ অনুসরণ করতে হবে।
-ধারা ৬: দাতার নির্দিষ্ট উদ্দেশ্যে দেওয়া অনুদান সেই উদ্দেশ্যেই ব্যবহার করতে হবে।` },
-    { title: 'একাদশ অধ্যায় — হিসাব, নিরীক্ষা ও স্বচ্ছতা', body: `ধারা ১: সংগঠনের সকল আর্থিক লেনদেন নির্ভুলভাবে লিখিত বা ডিজিটাল খাতায় সংরক্ষণ করতে হবে।
+ধারা ৬: দাতার নির্দিষ্ট উদ্দেশ্যে দেওয়া অনুদান সেই উদ্দেশ্যেই ব্যবহার করতে হবে।`
+    },
+    {
+      title: 'একাদশ অধ্যায় — হিসাব, নিরীক্ষা ও স্বচ্ছতা',
+      body: `ধারা ১: সংগঠনের সকল আর্থিক লেনদেন নির্ভুলভাবে লিখিত বা ডিজিটাল খাতায় সংরক্ষণ করতে হবে।
 ধারা ২: অর্থ সম্পাদক নিয়মিত আয়-ব্যয়ের বিবরণ প্রস্তুত করবেন।
 ধারা ৩: সাধারণ সভায় নির্ধারিত সময়ে আর্থিক প্রতিবেদন উপস্থাপন করতে হবে।
 ধারা ৪: প্রয়োজনে নিরপেক্ষ ব্যক্তি বা নিরীক্ষকের মাধ্যমে হিসাব পরীক্ষা করানো যাবে।
 ধারা ৫: আর্থিক অনিয়মের অভিযোগ পাওয়া গেলে যথাযথ তদন্ত করতে হবে।
-ধারা ৬: সদস্যদের কাছে আর্থিক কার্যক্রমের স্বচ্ছতা বজায় রাখতে হবে।` },
-    { title: 'দ্বাদশ অধ্যায় — নির্বাচন ও শূন্য পদ পূরণ', body: `ধারা ১: কার্যনির্বাহী কমিটি গঠনের পদ্ধতি সাধারণ পরিষদ নির্ধারণ করবে।
+ধারা ৬: সদস্যদের কাছে আর্থিক কার্যক্রমের স্বচ্ছতা বজায় রাখতে হবে।`
+    },
+    {
+      title: 'দ্বাদশ অধ্যায় — নির্বাচন ও শূন্য পদ পূরণ',
+      body: `ধারা ১: কার্যনির্বাহী কমিটি গঠনের পদ্ধতি সাধারণ পরিষদ নির্ধারণ করবে।
 ধারা ২: নির্বাচন স্বচ্ছ, নিরপেক্ষ ও গ্রহণযোগ্য পদ্ধতিতে সম্পন্ন করতে হবে।
 ধারা ৩: নির্বাচনের সময়সূচি, ভোটাধিকার ও প্রার্থী হওয়ার যোগ্যতা সাধারণ সভায় অনুমোদিত হবে।
 ধারা ৪: কোনো পদ শূন্য হলে কমিটির প্রস্তাব ও অনুমোদিত নিয়ম অনুযায়ী সাময়িক দায়িত্ব দেওয়া যাবে।
-ধারা ৫: নতুন কমিটির কাছে পূর্ববর্তী কমিটির হিসাব, নথি, সম্পদ ও দায়িত্ব বুঝিয়ে দিতে হবে।` },
-    { title: 'ত্রয়োদশ অধ্যায় — শৃঙ্খলা, অভিযোগ ও আপিল', body: `ধারা ১: সংগঠনের অর্থ আত্মসাৎ, প্রতারণা, গুরুতর অসদাচরণ বা সংগঠনের ক্ষতিসাধন শৃঙ্খলাভঙ্গ হিসেবে বিবেচিত হবে।
+ধারা ৫: নতুন কমিটির কাছে পূর্ববর্তী কমিটির হিসাব, নথি, সম্পদ ও দায়িত্ব বুঝিয়ে দিতে হবে।`
+    },
+    {
+      title: 'ত্রয়োদশ অধ্যায় — শৃঙ্খলা, অভিযোগ ও আপিল',
+      body: `ধারা ১: সংগঠনের অর্থ আত্মসাৎ, প্রতারণা, গুরুতর অসদাচরণ বা সংগঠনের ক্ষতিসাধন শৃঙ্খলাভঙ্গ হিসেবে বিবেচিত হবে।
 ধারা ২: অভিযোগ লিখিতভাবে কর্তৃপক্ষের কাছে জমা দিতে হবে।
 ধারা ৩: অভিযোগ নিরপেক্ষভাবে তদন্ত করতে হবে।
 ধারা ৪: অভিযুক্ত সদস্যকে অভিযোগ জানানো ও আত্মপক্ষ সমর্থনের যথাযথ সুযোগ দিতে হবে।
 ধারা ৫: অভিযোগ প্রমাণিত হলে সতর্কতা, সাময়িক স্থগিতাদেশ বা সদস্যপদ বাতিলের মতো ব্যবস্থা নেওয়া যাবে।
-ধারা ৬: সিদ্ধান্তের বিরুদ্ধে সাধারণ পরিষদে আপিলের সুযোগ থাকবে।` },
-    { title: 'চতুর্দশ অধ্যায় — গঠনতন্ত্র সংশোধন', body: `ধারা ১: সংগঠনের প্রয়োজনে গঠনতন্ত্র সংশোধনের প্রস্তাব করা যাবে।
+ধারা ৬: সিদ্ধান্তের বিরুদ্ধে সাধারণ পরিষদে আপিলের সুযোগ থাকবে।`
+    },
+    {
+      title: 'চতুর্দশ অধ্যায় — গঠনতন্ত্র সংশোধন',
+      body: `ধারা ১: সংগঠনের প্রয়োজনে গঠনতন্ত্র সংশোধনের প্রস্তাব করা যাবে।
 ধারা ২: সংশোধনী প্রস্তাবের কারণ ও প্রস্তাবিত পরিবর্তন সদস্যদের জানাতে হবে।
 ধারা ৩: সাধারণ সভায় অনুমোদিত পদ্ধতি ও প্রয়োজনীয় সংখ্যাগরিষ্ঠতার ভিত্তিতে সংশোধনী গৃহীত হবে।
 ধারা ৪: অনুমোদিত সংশোধনীর তারিখ ও বিবরণ সংরক্ষণ করতে হবে।
-ধারা ৫: প্রচলিত আইন বা প্রযোজ্য নিবন্ধন শর্তের সঙ্গে সামঞ্জস্য বজায় রাখতে হবে।` },
-    { title: 'পঞ্চদশ অধ্যায় — সংগঠন বিলুপ্তি ও সম্পদ', body: `ধারা ১: সংগঠন বিলুপ্তির প্রস্তাব সাধারণ পরিষদের বিশেষ সভায় উত্থাপন করতে হবে।
+ধারা ৫: প্রচলিত আইন বা প্রযোজ্য নিবন্ধন শর্তের সঙ্গে সামঞ্জস্য বজায় রাখতে হবে।`
+    },
+    {
+      title: 'পঞ্চদশ অধ্যায় — সংগঠন বিলুপ্তি ও সম্পদ',
+      body: `ধারা ১: সংগঠন বিলুপ্তির প্রস্তাব সাধারণ পরিষদের বিশেষ সভায় উত্থাপন করতে হবে।
 ধারা ২: বিলুপ্তির সিদ্ধান্ত অনুমোদিত পদ্ধতি ও প্রযোজ্য আইন অনুসারে গ্রহণ করতে হবে।
 ধারা ৩: বিলুপ্তির আগে সকল দায়-দেনা ও বৈধ পাওনা নিষ্পত্তি করতে হবে।
 ধারা ৪: অবশিষ্ট সম্পদ কোনো সদস্যের মধ্যে ব্যক্তিগতভাবে বণ্টন করা যাবে না।
-ধারা ৫: অবশিষ্ট সম্পদ আইনসম্মতভাবে অনুরূপ অলাভজনক জনকল্যাণমূলক কাজে হস্তান্তরের সিদ্ধান্ত নিতে হবে।` },
-    { title: 'ষোড়শ অধ্যায় — অন্তর্বর্তী ও চূড়ান্ত বিধান', body: `ধারা ১: এই গঠনতন্ত্রের ব্যাখ্যা নিয়ে মতভেদ হলে সাধারণ পরিষদে আলোচনা করে সিদ্ধান্ত নিতে হবে।
+ধারা ৫: অবশিষ্ট সম্পদ আইনসম্মতভাবে অনুরূপ অলাভজনক জনকল্যাণমূলক কাজে হস্তান্তরের সিদ্ধান্ত নিতে হবে।`
+    },
+    {
+      title: 'ষোড়শ অধ্যায় — অন্তর্বর্তী ও চূড়ান্ত বিধান',
+      body: `ধারা ১: এই গঠনতন্ত্রের ব্যাখ্যা নিয়ে মতভেদ হলে সাধারণ পরিষদে আলোচনা করে সিদ্ধান্ত নিতে হবে।
 ধারা ২: গঠনতন্ত্রের কোনো ধারা দেশের প্রচলিত আইনের সঙ্গে সাংঘর্ষিক হলে প্রচলিত আইন প্রাধান্য পাবে।
 ধারা ৩: এই গঠনতন্ত্রের কার্যকারিতা সাধারণ সভায় অনুমোদনের তারিখ থেকে শুরু হবে।
 ধারা ৪: অনুমোদনের তারিখ: [সাধারণ সভায় পূরণ করতে হবে]।
-ধারা ৫: এই নথিটি বর্তমানে একটি খসড়া; সাধারণ পরিষদের আলোচনা ও অনুমোদনের আগে একে চূড়ান্ত বা আইনগতভাবে নিবন্ধিত গঠনতন্ত্র হিসেবে গণ্য করা যাবে না।` }
+ধারা ৫: এই নথিটি বর্তমানে একটি খসড়া; সাধারণ পরিষদের আলোচনা ও অনুমোদনের আগে একে চূড়ান্ত বা আইনগতভাবে নিবন্ধিত গঠনতন্ত্র হিসেবে গণ্য করা যাবে না।`
+    }
   ];
 }
 
@@ -475,9 +666,11 @@ function defaultConstitution() {
 
 async function loadConstitutionStatus() {
   const snap = await getDoc(doc(db, 'constitution', '_settings'));
-  constitutionStatus = snap.exists()
-    ? (snap.data().status === 'approved' ? 'approved' : 'draft')
-    : 'draft';
+
+  constitutionStatus = snap.exists() &&
+    snap.data().status === 'approved'
+      ? 'approved'
+      : 'draft';
 
   return constitutionStatus;
 }
@@ -496,6 +689,7 @@ async function saveConstitutionStatus() {
 
     alert('গঠনতন্ত্রের অনুমোদনের অবস্থা সংরক্ষণ হয়েছে।');
     await refreshAdmin();
+
   } catch (error) {
     console.error(error);
     alert('অবস্থা সংরক্ষণ করা যায়নি: ' + error.message);
@@ -503,7 +697,9 @@ async function saveConstitutionStatus() {
 }
 
 function renderConstitution(items) {
-  const list = sortByOrder(items.length ? items : defaultConstitution());
+  const list = sortByOrder(
+    items.length ? items : defaultConstitution()
+  );
 
   const approved = constitutionStatus === 'approved';
 
@@ -517,18 +713,21 @@ function renderConstitution(items) {
         ${approved ? 'সাধারণ সভায় অনুমোদিত' : 'অনুমোদনের অপেক্ষায়'}
       </span>
     </div>
-    <div class="noticeitem" style="border-left-color:#d2a943">
+
+    <div class="noticeitem">
       <b>গুরুত্বপূর্ণ ঘোষণা</b>
       <p>${approved
         ? 'এই গঠনতন্ত্র সংগঠনের সাধারণ সভায় অনুমোদিত হিসেবে চিহ্নিত। এটি সরকারি নিবন্ধনের প্রমাণ নয়।'
         : 'এটি সংগঠনের গঠনতন্ত্রের খসড়া। সাধারণ সভার আলোচনা ও অনুমোদনের আগে চূড়ান্ত নয়।'
       }</p>
     </div>
+
     ${list.map(item => `
       <article class="noticeitem rule-card">
         <h3 class="rule-title">${escapeHTML(item.title)}</h3>
         <p>${escapeHTML(item.body)}</p>
-      </article>`).join('')}`;
+      </article>
+    `).join('')}`;
 }
 
 async function loadMemberConstitution() {
@@ -536,19 +735,21 @@ async function loadMemberConstitution() {
   if (!box) return;
 
   try {
-    const [items] = await Promise.all([
-      getList('constitution').then(list => list.filter(x => x.id !== '_settings')),
+    const [allItems] = await Promise.all([
+      getList('constitution'),
       loadConstitutionStatus()
     ]);
 
+    const items = allItems.filter(x => x.id !== '_settings');
     box.innerHTML = renderConstitution(items);
+
   } catch (error) {
     console.error(error);
     box.innerHTML = renderConstitution(defaultConstitution());
   }
 }
 
-/* RECEIPT */
+/* RECEIPTS */
 
 function receiptNumber(payment) {
   return payment.receiptNo ||
@@ -559,6 +760,7 @@ function receiptDate(payment) {
   if (payment.createdAt?.toDate) {
     return payment.createdAt.toDate().toLocaleDateString('bn-BD');
   }
+
   return 'তারিখ সংরক্ষিত নেই';
 }
 
@@ -636,7 +838,8 @@ function renderPayments(payments) {
       <p>জমা: ${money(p.amount)}</p>
       <p>মাধ্যম: ${escapeHTML(p.method || 'নগদ')}</p>
       <p>রশিদ: ${escapeHTML(receiptNumber(p))}</p>
-      <button class="primary" type="button" data-receipt="${escapeHTML(p.id)}">রশিদ দেখুন</button>
+      <button class="primary" type="button"
+        data-receipt="${escapeHTML(p.id)}">রশিদ দেখুন</button>
     </div>`).join('');
 }
 
@@ -662,6 +865,7 @@ async function memberView() {
           <p>${escapeHTML(profile.phone || currentUser.phoneNumber)}</p>
           <span class="status">অনুমোদিত সদস্য</span>
         </section>
+
         <section class="panel">
           <h2 class="heading-blue">সদস্য পরিচিতি</h2>
           <p>সদস্য আইডি: ${escapeHTML(currentUser.uid.slice(0, 10).toUpperCase())}</p>
@@ -719,6 +923,7 @@ async function memberView() {
       { id: 'activities', icon: '☆', label: 'কার্যক্রম' },
       { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
     ])}
+
     ${footer()}`;
 
   bindLogout();
@@ -768,6 +973,7 @@ async function memberView() {
       loadMemberRules(),
       loadMemberConstitution()
     ]);
+
   } catch (error) {
     console.error(error);
     alert('তথ্য লোড করতে সমস্যা হয়েছে।');
@@ -795,12 +1001,14 @@ async function adminView() {
           <h1>অ্যাডমিন প্যানেল</h1>
           <p>সংগঠনের সকল কার্যক্রম পরিচালনা করুন।</p>
         </section>
+
         <section class="tiles">
           <article><b id="memberCount">০</b><span>মোট সদস্য</span></article>
           <article><b id="pendingCount">০</b><span>নতুন আবেদন</span></article>
           <article><b id="donationTotal">৳ ০</b><span>মোট অনুদান</span></article>
           <article><b id="expenseTotal">৳ ০</b><span>মোট খরচ</span></article>
         </section>
+
         <section class="panel">
           <h2 class="heading-blue">আর্থিক হিসাবের সংক্ষিপ্ত বিবরণ</h2>
           <div id="financeReport">লোড হচ্ছে...</div>
@@ -887,6 +1095,7 @@ async function adminView() {
           <textarea id="noticeBody"></textarea>
           <button class="primary" id="publishNotice">নোটিশ প্রকাশ করুন</button>
         </section>
+
         <section class="panel">
           <h2 class="heading-purple">কার্যক্রম যোগ করুন</h2>
           <label>কার্যক্রমের শিরোনাম</label>
@@ -907,6 +1116,7 @@ async function adminView() {
           <button class="primary" id="saveRule">নিয়ম সংরক্ষণ করুন</button>
           <button class="secondary" id="cancelRuleEdit" hidden>সম্পাদনা বাতিল</button>
         </section>
+
         <section class="panel">
           <h2 class="heading-blue">প্রকাশিত নিয়মাবলি</h2>
           <div id="adminRules">লোড হচ্ছে...</div>
@@ -932,6 +1142,7 @@ async function adminView() {
           <button class="primary" id="saveConstitution">গঠনতন্ত্র সংরক্ষণ করুন</button>
           <button class="secondary" id="cancelConstitutionEdit" hidden>সম্পাদনা বাতিল</button>
         </section>
+
         <section class="panel">
           <h2 class="heading-blue">সংরক্ষিত গঠনতন্ত্র</h2>
           <div id="adminConstitution">লোড হচ্ছে...</div>
@@ -948,6 +1159,7 @@ async function adminView() {
       { id: 'content', icon: '▤', label: 'প্রকাশনা' },
       { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
     ])}
+
     ${footer()}`;
 
   bindLogout();
@@ -968,10 +1180,11 @@ async function adminView() {
   await refreshAdmin();
 }
 
-/* ADMIN DATA */
+/* DEFAULT CONSTITUTION STORAGE */
 
 async function ensureDefaultConstitution(items) {
   const chapters = items.filter(item => item.id !== '_settings');
+
   if (chapters.length) return chapters;
 
   const defaults = defaultConstitution();
@@ -986,8 +1199,11 @@ async function ensureDefaultConstitution(items) {
     });
   }
 
-  return (await getList('constitution')).filter(x => x.id !== '_settings');
+  return (await getList('constitution'))
+    .filter(x => x.id !== '_settings');
 }
+
+/* ADMIN DATA */
 
 async function refreshAdmin() {
   try {
@@ -1010,8 +1226,13 @@ async function refreshAdmin() {
     $('#memberCount').textContent = members.length.toLocaleString('bn-BD');
     $('#pendingCount').textContent = pending.length.toLocaleString('bn-BD');
 
-    const donationSum = donations.reduce((s, x) => s + Number(x.amount || 0), 0);
-    const expenseSum = expenses.reduce((s, x) => s + Number(x.amount || 0), 0);
+    const donationSum = donations.reduce(
+      (s, x) => s + Number(x.amount || 0), 0
+    );
+
+    const expenseSum = expenses.reduce(
+      (s, x) => s + Number(x.amount || 0), 0
+    );
 
     $('#donationTotal').textContent = money(donationSum);
     $('#expenseTotal').textContent = money(expenseSum);
@@ -1028,11 +1249,13 @@ async function refreshAdmin() {
       : 'নতুন আবেদন নেই।';
 
     document.querySelectorAll('[data-approve]').forEach(button => {
-      button.onclick = () => changeStatus(button.dataset.approve, 'approved');
+      button.onclick = () =>
+        changeStatus(button.dataset.approve, 'approved');
     });
 
     document.querySelectorAll('[data-reject]').forEach(button => {
-      button.onclick = () => changeStatus(button.dataset.reject, 'rejected');
+      button.onclick = () =>
+        changeStatus(button.dataset.reject, 'rejected');
     });
 
     $('#memberList').innerHTML = members.length
@@ -1045,7 +1268,8 @@ async function refreshAdmin() {
       : 'কোনো অনুমোদিত সদস্য নেই।';
 
     const options = members.map(u => `
-      <option value="${escapeHTML(u.id)}" data-phone="${escapeHTML(u.phone || '')}">
+      <option value="${escapeHTML(u.id)}"
+        data-phone="${escapeHTML(u.phone || '')}">
         ${escapeHTML(u.phone || u.id)}
       </option>`).join('');
 
@@ -1055,15 +1279,22 @@ async function refreshAdmin() {
     $('#payMember').innerHTML =
       '<option value="">সদস্য নির্বাচন করুন</option>' + options;
 
-    const paymentSum = payments.reduce((s, x) => s + Number(x.amount || 0), 0);
-    const dueSum = dues.reduce((s, x) => s + Number(x.amount || 0), 0);
+    const paymentSum = payments.reduce(
+      (s, x) => s + Number(x.amount || 0), 0
+    );
+
+    const dueSum = dues.reduce(
+      (s, x) => s + Number(x.amount || 0), 0
+    );
 
     const report = `
       <p>মোট নির্ধারিত চাঁদা: <b>${money(dueSum)}</b></p>
       <p>মোট জমা: <b>${money(paymentSum)}</b></p>
       <p>মোট অনুদান: <b>${money(donationSum)}</b></p>
       <p>মোট খরচ: <b>${money(expenseSum)}</b></p>
-      <p>জমা ও অনুদান থেকে খরচ বাদে: <b>${money(paymentSum + donationSum - expenseSum)}</b></p>`;
+      <p>জমা ও অনুদান থেকে খরচ বাদে:
+        <b>${money(paymentSum + donationSum - expenseSum)}</b>
+      </p>`;
 
     $('#financeReport').innerHTML = report;
     $('#financeReport2').innerHTML = report;
@@ -1071,11 +1302,13 @@ async function refreshAdmin() {
     renderAdminRules(rules);
 
     const constitutionItems = await ensureDefaultConstitution(constitution);
+
     renderAdminConstitution(sortByOrder(constitutionItems));
 
     if ($('#constitutionStatus')) {
       $('#constitutionStatus').value = constitutionStatus;
     }
+
   } catch (error) {
     console.error(error);
     alert('অ্যাডমিন তথ্য লোড হয়নি। Firestore Rules পরীক্ষা করুন।');
@@ -1098,6 +1331,7 @@ function selectedMember(id) {
   const phone = select.selectedOptions[0]?.dataset.phone || '';
 
   if (!uid) throw new Error('সদস্য নির্বাচন করুন।');
+
   return { uid, phone };
 }
 
@@ -1125,6 +1359,7 @@ async function saveDue() {
     alert('চাঁদা নির্ধারণ করা হয়েছে।');
     $('#dueAmount').value = '';
     await refreshAdmin();
+
   } catch (error) {
     alert(error.message);
   }
@@ -1164,12 +1399,16 @@ async function savePayment() {
       createdBy: currentUser.uid
     });
 
-    const receiptNo = 'UNSKS-' + paymentRef.id.slice(-10).toUpperCase();
+    const receiptNo =
+      'UNSKS-' + paymentRef.id.slice(-10).toUpperCase();
+
     await updateDoc(paymentRef, { receiptNo });
 
     alert('জমা সংরক্ষণ হয়েছে। ডিজিটাল রশিদ তৈরি হয়েছে।');
+
     $('#payAmount').value = '';
     await refreshAdmin();
+
   } catch (error) {
     console.error(error);
     alert('জমা সংরক্ষণে সমস্যা হয়েছে: ' + error.message);
@@ -1197,10 +1436,13 @@ async function saveDonation() {
     });
 
     alert('অনুদান সংরক্ষণ হয়েছে।');
+
     $('#donor').value = '';
     $('#donationAmount').value = '';
     $('#donationPurpose').value = '';
+
     await refreshAdmin();
+
   } catch (error) {
     alert(error.message);
   }
@@ -1225,10 +1467,13 @@ async function saveExpense() {
     });
 
     alert('খরচ সংরক্ষণ হয়েছে।');
+
     $('#expensePurpose').value = '';
     $('#expenseAmount').value = '';
     $('#expenseDate').value = '';
+
     await refreshAdmin();
+
   } catch (error) {
     alert(error.message);
   }
@@ -1255,6 +1500,7 @@ async function publishNotice() {
     alert('নোটিশ প্রকাশ হয়েছে।');
     $('#noticeTitle').value = '';
     $('#noticeBody').value = '';
+
   } catch (error) {
     alert(error.message);
   }
@@ -1279,6 +1525,7 @@ async function saveActivity() {
     alert('কার্যক্রম প্রকাশ হয়েছে।');
     $('#activityTitle').value = '';
     $('#activityBody').value = '';
+
   } catch (error) {
     alert(error.message);
   }
@@ -1295,8 +1542,10 @@ function renderAdminRules(rules) {
       <div class="noticeitem">
         <h3>${escapeHTML(r.title)}</h3>
         <p>${escapeHTML(r.body)}</p>
-        <button class="secondary" data-edit-rule="${escapeHTML(r.id)}">সম্পাদনা</button>
-        <button class="danger-btn" data-delete-rule="${escapeHTML(r.id)}">মুছুন</button>
+        <button class="secondary"
+          data-edit-rule="${escapeHTML(r.id)}">সম্পাদনা</button>
+        <button class="danger-btn"
+          data-delete-rule="${escapeHTML(r.id)}">মুছুন</button>
       </div>`).join('')
     : '<p>এখনো কোনো নিয়ম সংরক্ষণ করা হয়নি।</p>';
 
@@ -1325,7 +1574,9 @@ async function saveRule() {
         updatedAt: serverTimestamp(),
         updatedBy: currentUser.uid
       });
+
       alert('নিয়ম সম্পাদনা করা হয়েছে।');
+
     } else {
       await addDoc(collection(db, 'rules'), {
         title,
@@ -1333,11 +1584,13 @@ async function saveRule() {
         createdAt: serverTimestamp(),
         createdBy: currentUser.uid
       });
+
       alert('নতুন নিয়ম সংরক্ষণ হয়েছে।');
     }
 
     cancelRuleEdit();
     renderAdminRules(await getList('rules'));
+
   } catch (error) {
     alert(error.message);
   }
@@ -1348,6 +1601,7 @@ function editRule(id, rules) {
   if (!rule) return;
 
   editingTermId = id;
+
   $('#ruleTitle').value = rule.title || '';
   $('#ruleBody').value = rule.body || '';
   $('#saveRule').textContent = 'পরিবর্তন সংরক্ষণ করুন';
@@ -1358,6 +1612,7 @@ function editRule(id, rules) {
 
 function cancelRuleEdit() {
   editingTermId = null;
+
   $('#ruleTitle').value = '';
   $('#ruleBody').value = '';
   $('#saveRule').textContent = 'নিয়ম সংরক্ষণ করুন';
@@ -1371,6 +1626,7 @@ async function deleteRule(id) {
     await deleteDoc(doc(db, 'rules', id));
     alert('নিয়ম মুছে ফেলা হয়েছে।');
     renderAdminRules(await getList('rules'));
+
   } catch (error) {
     alert('নিয়ম মুছতে সমস্যা হয়েছে: ' + error.message);
   }
@@ -1382,24 +1638,30 @@ function renderAdminConstitution(items) {
   const box = $('#adminConstitution');
   if (!box) return;
 
-  const sorted = sortByOrder(items.filter(item => item.id !== '_settings'));
+  const sorted = sortByOrder(
+    items.filter(item => item.id !== '_settings')
+  );
 
   box.innerHTML = sorted.length
     ? sorted.map(item => `
       <div class="noticeitem">
         <h3>${escapeHTML(item.title)}</h3>
         <p>${escapeHTML(item.body)}</p>
-        <button class="secondary" data-edit-constitution="${escapeHTML(item.id)}">সম্পাদনা</button>
-        <button class="danger-btn" data-delete-constitution="${escapeHTML(item.id)}">মুছুন</button>
+        <button class="secondary"
+          data-edit-constitution="${escapeHTML(item.id)}">সম্পাদনা</button>
+        <button class="danger-btn"
+          data-delete-constitution="${escapeHTML(item.id)}">মুছুন</button>
       </div>`).join('')
     : '<p>গঠনতন্ত্রের কোনো অংশ নেই।</p>';
 
   document.querySelectorAll('[data-edit-constitution]').forEach(button => {
-    button.onclick = () => editConstitution(button.dataset.editConstitution, sorted);
+    button.onclick = () =>
+      editConstitution(button.dataset.editConstitution, sorted);
   });
 
   document.querySelectorAll('[data-delete-constitution]').forEach(button => {
-    button.onclick = () => deleteConstitution(button.dataset.deleteConstitution);
+    button.onclick = () =>
+      deleteConstitution(button.dataset.deleteConstitution);
   });
 }
 
@@ -1419,7 +1681,9 @@ async function saveConstitution() {
         updatedAt: serverTimestamp(),
         updatedBy: currentUser.uid
       });
+
       alert('গঠনতন্ত্র সম্পাদনা করা হয়েছে।');
+
     } else {
       const existing = (await getList('constitution'))
         .filter(item => item.id !== '_settings');
@@ -1435,11 +1699,13 @@ async function saveConstitution() {
         createdAt: serverTimestamp(),
         createdBy: currentUser.uid
       });
+
       alert('গঠনতন্ত্র সংরক্ষণ হয়েছে।');
     }
 
     cancelConstitutionEdit();
     renderAdminConstitution(await getList('constitution'));
+
   } catch (error) {
     alert(error.message);
   }
@@ -1452,6 +1718,7 @@ function editConstitution(id, items) {
   if (!item) return;
 
   editingConstitutionId = id;
+
   $('#constitutionTitle').value = item.title || '';
   $('#constitutionBody').value = item.body || '';
   $('#saveConstitution').textContent = 'পরিবর্তন সংরক্ষণ করুন';
@@ -1462,6 +1729,7 @@ function editConstitution(id, items) {
 
 function cancelConstitutionEdit() {
   editingConstitutionId = null;
+
   $('#constitutionTitle').value = '';
   $('#constitutionBody').value = '';
   $('#saveConstitution').textContent = 'গঠনতন্ত্র সংরক্ষণ করুন';
@@ -1477,6 +1745,7 @@ async function deleteConstitution(id) {
     await deleteDoc(doc(db, 'constitution', id));
     alert('গঠনতন্ত্রের অংশ মুছে ফেলা হয়েছে।');
     renderAdminConstitution(await getList('constitution'));
+
   } catch (error) {
     alert('মুছতে সমস্যা হয়েছে: ' + error.message);
   }
@@ -1489,12 +1758,14 @@ onAuthStateChanged(auth, async user => {
     currentUser = null;
     profile = null;
     confirmation = null;
+
     loginView();
     return;
   }
 
   try {
     await loadUser(user);
+
   } catch (error) {
     console.error(error);
 
