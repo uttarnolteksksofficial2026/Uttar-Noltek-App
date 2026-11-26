@@ -23,6 +23,7 @@ let currentUser = null;
 let profile = null;
 let editingTermId = null;
 let editingConstitutionId = null;
+let constitutionStatus = 'draft';
 
 const app = $('#app');
 const LOGO_URL = '/logo.png';
@@ -73,8 +74,6 @@ function baseHeader() {
     </header>`;
 }
 
-/* DRAWER — ফোন ও ইমেইল এখানে নেই */
-
 function menuDrawer(items) {
   return `
     <div class="drawer-backdrop" id="drawerBackdrop"></div>
@@ -83,7 +82,6 @@ function menuDrawer(items) {
         <span>☰ মেনু</span>
         <button id="closeDrawer" type="button" aria-label="বন্ধ করুন">✕</button>
       </div>
-
       <div class="drawer-brand">
         ${logoHTML()}
         <b>উত্তর নলটেক</b>
@@ -91,7 +89,6 @@ function menuDrawer(items) {
         <small>একতাই শক্তি · Unity is Strength</small>
         <span class="drawer-decoration">✦ মানবতার সেবায় ✦</span>
       </div>
-
       <div class="drawer-links">
         ${items.map(item => `
           <button class="drawer-link" type="button"
@@ -102,10 +99,7 @@ function menuDrawer(items) {
           </button>
         `).join('')}
       </div>
-
-      <div class="drawer-footer">
-        মানবতার সেবায় · উত্তর নলটেক
-      </div>
+      <div class="drawer-footer">মানবতার সেবায় · উত্তর নলটেক</div>
     </aside>`;
 }
 
@@ -380,158 +374,155 @@ async function loadMemberRules() {
   }
 }
 
-/* FULL DRAFT CONSTITUTION */
+/* DEFAULT CONSTITUTION */
 
 function defaultConstitution() {
   return [
-    {
-      title: 'প্রথম অধ্যায় — নাম, পরিচয় ও কার্যালয়',
-      body: `ধারা ১: সংগঠনের নাম হবে “উত্তর নলটেক সমাজ কল্যাণ সংগঠন”।
+    { title: 'প্রথম অধ্যায় — নাম, পরিচয় ও কার্যালয়', body: `ধারা ১: সংগঠনের নাম হবে “উত্তর নলটেক সমাজ কল্যাণ সংগঠন”।
 ধারা ২: সংগঠনটি অরাজনৈতিক, অলাভজনক, স্বেচ্ছাসেবী ও সমাজকল্যাণমূলক প্রতিষ্ঠান হিসেবে পরিচালিত হবে।
 ধারা ৩: সংগঠনের প্রধান কার্যক্ষেত্র উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ।
 ধারা ৪: সংগঠনের কার্যালয়ের ঠিকানা সাধারণ সভার সিদ্ধান্ত অনুযায়ী নির্ধারিত ও পরিবর্তিত হতে পারবে।
-ধারা ৫: প্রযোজ্য হলে নিবন্ধন নম্বর ও নিবন্ধনের তারিখ: [প্রযোজ্য ক্ষেত্রে পূরণ করতে হবে]।`
-    },
-    {
-      title: 'দ্বিতীয় অধ্যায় — লক্ষ্য ও উদ্দেশ্য',
-      body: `ধারা ১: এলাকার দরিদ্র, অসহায়, অসুস্থ ও বিপদগ্রস্ত মানুষের পাশে দাঁড়ানো।
+ধারা ৫: প্রযোজ্য হলে নিবন্ধন নম্বর ও নিবন্ধনের তারিখ: [প্রযোজ্য ক্ষেত্রে পূরণ করতে হবে]।` },
+    { title: 'দ্বিতীয় অধ্যায় — লক্ষ্য ও উদ্দেশ্য', body: `ধারা ১: এলাকার দরিদ্র, অসহায়, অসুস্থ ও বিপদগ্রস্ত মানুষের পাশে দাঁড়ানো।
 ধারা ২: দরিদ্র ও মেধাবী শিক্ষার্থীদের শিক্ষা সহায়তা প্রদান।
 ধারা ৩: অসুস্থ ও অসচ্ছল মানুষের চিকিৎসা সহায়তায় উদ্যোগ গ্রহণ।
 ধারা ৪: বন্যা, অগ্নিকাণ্ড, প্রাকৃতিক দুর্যোগ ও জরুরি পরিস্থিতিতে ত্রাণ সহায়তা প্রদান।
 ধারা ৫: সামাজিক সম্প্রীতি, ঐক্য, মানবিকতা ও ভ্রাতৃত্ববোধ প্রতিষ্ঠা।
 ধারা ৬: পরিবেশ সংরক্ষণ, পরিচ্ছন্নতা ও জনসচেতনতামূলক কার্যক্রম পরিচালনা।
-ধারা ৭: এলাকার সামগ্রিক উন্নয়নে বৈধ ও জনকল্যাণমূলক উদ্যোগ গ্রহণ।`
-    },
-    {
-      title: 'তৃতীয় অধ্যায় — সদস্যপদ',
-      body: `ধারা ১: সংগঠনের লক্ষ্য ও উদ্দেশ্যের প্রতি শ্রদ্ধাশীল ব্যক্তি সদস্য হওয়ার আবেদন করতে পারবেন।
+ধারা ৭: এলাকার সামগ্রিক উন্নয়নে বৈধ ও জনকল্যাণমূলক উদ্যোগ গ্রহণ।` },
+    { title: 'তৃতীয় অধ্যায় — সদস্যপদ', body: `ধারা ১: সংগঠনের লক্ষ্য ও উদ্দেশ্যের প্রতি শ্রদ্ধাশীল ব্যক্তি সদস্য হওয়ার আবেদন করতে পারবেন।
 ধারা ২: আবেদনকারীকে নির্ধারিত আবেদনপত্রে সঠিক তথ্য প্রদান করতে হবে।
 ধারা ৩: নির্ধারিত যাচাই ও অনুমোদনের পর সদস্যপদ কার্যকর হবে।
 ধারা ৪: সদস্যের ধরন, যোগ্যতা, চাঁদা ও অন্যান্য শর্ত সাধারণ সভায় নির্ধারিত হবে।
 ধারা ৫: সদস্যপদ স্বেচ্ছায় লিখিত আবেদনের মাধ্যমে ত্যাগ করা যাবে।
-ধারা ৬: সদস্যপদের তথ্য সংগঠনের নথিতে সংরক্ষণ করতে হবে।`
-    },
-    {
-      title: 'চতুর্থ অধ্যায় — সদস্যদের অধিকার',
-      body: `ধারা ১: প্রত্যেক অনুমোদিত সদস্য সংগঠনের কার্যক্রমে অংশগ্রহণ করতে পারবেন।
+ধারা ৬: সদস্যপদের তথ্য সংগঠনের নথিতে সংরক্ষণ করতে হবে।` },
+    { title: 'চতুর্থ অধ্যায় — সদস্যদের অধিকার', body: `ধারা ১: প্রত্যেক অনুমোদিত সদস্য সংগঠনের কার্যক্রমে অংশগ্রহণ করতে পারবেন।
 ধারা ২: সভায় মতামত, প্রস্তাব ও গঠনমূলক সমালোচনা উপস্থাপন করতে পারবেন।
 ধারা ৩: অনুমোদিত পদ্ধতিতে সংগঠনের হিসাব ও কার্যক্রম সম্পর্কে তথ্য জানতে পারবেন।
 ধারা ৪: গঠনতন্ত্র ও নিয়ম অনুযায়ী নির্বাচনে অংশগ্রহণ ও ভোটাধিকার প্রয়োগ করতে পারবেন।
-ধারা ৫: অভিযোগ বা আপিল উপস্থাপনের ন্যায্য সুযোগ পাবেন।`
-    },
-    {
-      title: 'পঞ্চম অধ্যায় — সদস্যদের দায়িত্ব ও আচরণ',
-      body: `ধারা ১: সংগঠনের গঠনতন্ত্র, নিয়ম ও বৈধ সিদ্ধান্ত মেনে চলতে হবে।
+ধারা ৫: অভিযোগ বা আপিল উপস্থাপনের ন্যায্য সুযোগ পাবেন।` },
+    { title: 'পঞ্চম অধ্যায় — সদস্যদের দায়িত্ব ও আচরণ', body: `ধারা ১: সংগঠনের গঠনতন্ত্র, নিয়ম ও বৈধ সিদ্ধান্ত মেনে চলতে হবে।
 ধারা ২: সংগঠনের সুনাম, সম্পদ ও গোপনীয়তা রক্ষা করতে হবে।
 ধারা ৩: অন্য সদস্য ও উপকারভোগীদের সঙ্গে সম্মানজনক আচরণ করতে হবে।
 ধারা ৪: সামর্থ্য ও নির্ধারিত নিয়ম অনুযায়ী চাঁদা প্রদান করতে হবে।
 ধারা ৫: সংগঠনের নামে ব্যক্তিগত সুবিধা গ্রহণ, প্রতারণা বা বিভ্রান্তিকর প্রচার করা যাবে না।
-ধারা ৬: ধর্ম, বর্ণ, লিঙ্গ, আর্থিক অবস্থা বা ব্যক্তিগত পরিচয়ের ভিত্তিতে বৈষম্য করা যাবে না।`
-    },
-    {
-      title: 'ষষ্ঠ অধ্যায় — সাধারণ পরিষদ',
-      body: `ধারা ১: সংগঠনের অনুমোদিত সকল সদস্য নিয়ে সাধারণ পরিষদ গঠিত হবে।
+ধারা ৬: ধর্ম, বর্ণ, লিঙ্গ, আর্থিক অবস্থা বা ব্যক্তিগত পরিচয়ের ভিত্তিতে বৈষম্য করা যাবে না।` },
+    { title: 'ষষ্ঠ অধ্যায় — সাধারণ পরিষদ', body: `ধারা ১: সংগঠনের অনুমোদিত সকল সদস্য নিয়ে সাধারণ পরিষদ গঠিত হবে।
 ধারা ২: সাধারণ পরিষদ সংগঠনের সর্বোচ্চ নীতিনির্ধারণী সভা হিসেবে কাজ করবে।
 ধারা ৩: গঠনতন্ত্র অনুমোদন, সংশোধন, কমিটি নির্বাচন, বার্ষিক প্রতিবেদন ও গুরুত্বপূর্ণ নীতিগত সিদ্ধান্ত সাধারণ পরিষদ গ্রহণ করবে।
 ধারা ৪: সাধারণ সভার সময়, নোটিশ, উপস্থিতি ও কোরামের নিয়ম সভায় অনুমোদিত হবে।
-ধারা ৫: সভার সিদ্ধান্ত ও কার্যবিবরণী লিখিতভাবে সংরক্ষণ করতে হবে।`
-    },
-    {
-      title: 'সপ্তম অধ্যায় — কার্যনির্বাহী কমিটি',
-      body: `ধারা ১: সংগঠনের দৈনন্দিন কার্যক্রম পরিচালনার জন্য কার্যনির্বাহী কমিটি থাকবে।
+ধারা ৫: সভার সিদ্ধান্ত ও কার্যবিবরণী লিখিতভাবে সংরক্ষণ করতে হবে।` },
+    { title: 'সপ্তম অধ্যায় — কার্যনির্বাহী কমিটি', body: `ধারা ১: সংগঠনের দৈনন্দিন কার্যক্রম পরিচালনার জন্য কার্যনির্বাহী কমিটি থাকবে।
 ধারা ২: কমিটিতে সভাপতি, সহ-সভাপতি, সাধারণ সম্পাদক, যুগ্ম সম্পাদক, সাংগঠনিক সম্পাদক, অর্থ সম্পাদক এবং প্রয়োজনীয় অন্যান্য পদ থাকতে পারবে।
 ধারা ৩: কমিটির সুনির্দিষ্ট পদসংখ্যা, সদস্যসংখ্যা ও দায়িত্ব সাধারণ সভায় অনুমোদিত হবে।
 ধারা ৪: কমিটির মেয়াদ সাধারণ সভায় নির্ধারিত হবে এবং অনুমোদিত কার্যবিবরণীতে লিপিবদ্ধ থাকবে।
-ধারা ৫: কমিটি সাধারণ পরিষদের কাছে জবাবদিহি করবে।`
-    },
-    {
-      title: 'অষ্টম অধ্যায় — পদাধিকারীদের দায়িত্ব',
-      body: `ধারা ১: সভাপতি সংগঠনের সার্বিক নেতৃত্ব দেবেন এবং সভায় সভাপতিত্ব করবেন।
+ধারা ৫: কমিটি সাধারণ পরিষদের কাছে জবাবদিহি করবে।` },
+    { title: 'অষ্টম অধ্যায় — পদাধিকারীদের দায়িত্ব', body: `ধারা ১: সভাপতি সংগঠনের সার্বিক নেতৃত্ব দেবেন এবং সভায় সভাপতিত্ব করবেন।
 ধারা ২: সহ-সভাপতি সভাপতিকে সহযোগিতা করবেন এবং অনুপস্থিতিতে অনুমোদিতভাবে দায়িত্ব পালন করবেন।
 ধারা ৩: সাধারণ সম্পাদক প্রশাসনিক কাজ, সভা আহ্বান ও সিদ্ধান্ত বাস্তবায়ন সমন্বয় করবেন।
 ধারা ৪: যুগ্ম সম্পাদক সাধারণ সম্পাদককে সহযোগিতা করবেন।
 ধারা ৫: সাংগঠনিক সম্পাদক সদস্য ও সাংগঠনিক কার্যক্রম সমন্বয় করবেন।
 ধারা ৬: অর্থ সম্পাদক আয়-ব্যয়ের হিসাব, রসিদ ও আর্থিক নথি সংরক্ষণ করবেন।
-ধারা ৭: অন্যান্য পদাধিকারী কমিটির সিদ্ধান্ত অনুযায়ী দায়িত্ব পালন করবেন।`
-    },
-    {
-      title: 'নবম অধ্যায় — সভা, কোরাম ও সিদ্ধান্ত',
-      body: `ধারা ১: প্রয়োজন অনুযায়ী কার্যনির্বাহী কমিটির সভা অনুষ্ঠিত হবে।
+ধারা ৭: অন্যান্য পদাধিকারী কমিটির সিদ্ধান্ত অনুযায়ী দায়িত্ব পালন করবেন।` },
+    { title: 'নবম অধ্যায় — সভা, কোরাম ও সিদ্ধান্ত', body: `ধারা ১: প্রয়োজন অনুযায়ী কার্যনির্বাহী কমিটির সভা অনুষ্ঠিত হবে।
 ধারা ২: বছরে অন্তত একবার সাধারণ সভা আয়োজনের উদ্যোগ নিতে হবে।
 ধারা ৩: সভার তারিখ, সময়, স্থান ও আলোচ্যসূচি সদস্যদের যথাসময়ে জানাতে হবে।
 ধারা ৪: সভার কোরাম সাধারণ সভায় অনুমোদিত নিয়ম অনুযায়ী নির্ধারিত হবে।
 ধারা ৫: সিদ্ধান্ত গ্রহণে প্রথমে ঐকমত্যের চেষ্টা করতে হবে; প্রয়োজনে উপস্থিত ভোটাধিকারপ্রাপ্ত সদস্যদের সংখ্যাগরিষ্ঠ মত গ্রহণ করা হবে।
-ধারা ৬: গুরুত্বপূর্ণ সিদ্ধান্ত কার্যবিবরণীতে লিখে রাখতে হবে।`
-    },
-    {
-      title: 'দশম অধ্যায় — অর্থ, তহবিল ও অনুদান',
-      body: `ধারা ১: সদস্য চাঁদা, স্বেচ্ছা অনুদান, বৈধ অনুদান ও আইনসম্মত অন্যান্য উৎস থেকে তহবিল গঠিত হবে।
+ধারা ৬: গুরুত্বপূর্ণ সিদ্ধান্ত কার্যবিবরণীতে লিখে রাখতে হবে।` },
+    { title: 'দশম অধ্যায় — অর্থ, তহবিল ও অনুদান', body: `ধারা ১: সদস্য চাঁদা, স্বেচ্ছা অনুদান, বৈধ অনুদান ও আইনসম্মত অন্যান্য উৎস থেকে তহবিল গঠিত হবে।
 ধারা ২: সকল অর্থ সংগঠনের অনুমোদিত জনকল্যাণমূলক কাজে ব্যয় করতে হবে।
 ধারা ৩: কোনো সদস্য বা কর্মকর্তা সংগঠনের অর্থ ব্যক্তিগতভাবে আত্মসাৎ বা ব্যক্তিগত কাজে ব্যবহার করতে পারবেন না।
 ধারা ৪: প্রতিটি আয় ও ব্যয়ের রসিদ, ভাউচার বা উপযুক্ত প্রমাণ সংরক্ষণ করতে হবে।
 ধারা ৫: অর্থ ব্যয়ের ক্ষেত্রে অনুমোদিত সিদ্ধান্ত ও আর্থিক নিয়ন্ত্রণ অনুসরণ করতে হবে।
-ধারা ৬: দাতার নির্দিষ্ট উদ্দেশ্যে দেওয়া অনুদান সেই উদ্দেশ্যেই ব্যবহার করতে হবে।`
-    },
-    {
-      title: 'একাদশ অধ্যায় — হিসাব, নিরীক্ষা ও স্বচ্ছতা',
-      body: `ধারা ১: সংগঠনের সকল আর্থিক লেনদেন নির্ভুলভাবে লিখিত বা ডিজিটাল খাতায় সংরক্ষণ করতে হবে।
+ধারা ৬: দাতার নির্দিষ্ট উদ্দেশ্যে দেওয়া অনুদান সেই উদ্দেশ্যেই ব্যবহার করতে হবে।` },
+    { title: 'একাদশ অধ্যায় — হিসাব, নিরীক্ষা ও স্বচ্ছতা', body: `ধারা ১: সংগঠনের সকল আর্থিক লেনদেন নির্ভুলভাবে লিখিত বা ডিজিটাল খাতায় সংরক্ষণ করতে হবে।
 ধারা ২: অর্থ সম্পাদক নিয়মিত আয়-ব্যয়ের বিবরণ প্রস্তুত করবেন।
 ধারা ৩: সাধারণ সভায় নির্ধারিত সময়ে আর্থিক প্রতিবেদন উপস্থাপন করতে হবে।
 ধারা ৪: প্রয়োজনে নিরপেক্ষ ব্যক্তি বা নিরীক্ষকের মাধ্যমে হিসাব পরীক্ষা করানো যাবে।
 ধারা ৫: আর্থিক অনিয়মের অভিযোগ পাওয়া গেলে যথাযথ তদন্ত করতে হবে।
-ধারা ৬: সদস্যদের কাছে আর্থিক কার্যক্রমের স্বচ্ছতা বজায় রাখতে হবে।`
-    },
-    {
-      title: 'দ্বাদশ অধ্যায় — নির্বাচন ও শূন্য পদ পূরণ',
-      body: `ধারা ১: কার্যনির্বাহী কমিটি গঠনের পদ্ধতি সাধারণ পরিষদ নির্ধারণ করবে।
+ধারা ৬: সদস্যদের কাছে আর্থিক কার্যক্রমের স্বচ্ছতা বজায় রাখতে হবে।` },
+    { title: 'দ্বাদশ অধ্যায় — নির্বাচন ও শূন্য পদ পূরণ', body: `ধারা ১: কার্যনির্বাহী কমিটি গঠনের পদ্ধতি সাধারণ পরিষদ নির্ধারণ করবে।
 ধারা ২: নির্বাচন স্বচ্ছ, নিরপেক্ষ ও গ্রহণযোগ্য পদ্ধতিতে সম্পন্ন করতে হবে।
 ধারা ৩: নির্বাচনের সময়সূচি, ভোটাধিকার ও প্রার্থী হওয়ার যোগ্যতা সাধারণ সভায় অনুমোদিত হবে।
 ধারা ৪: কোনো পদ শূন্য হলে কমিটির প্রস্তাব ও অনুমোদিত নিয়ম অনুযায়ী সাময়িক দায়িত্ব দেওয়া যাবে।
-ধারা ৫: নতুন কমিটির কাছে পূর্ববর্তী কমিটির হিসাব, নথি, সম্পদ ও দায়িত্ব বুঝিয়ে দিতে হবে।`
-    },
-    {
-      title: 'ত্রয়োদশ অধ্যায় — শৃঙ্খলা, অভিযোগ ও আপিল',
-      body: `ধারা ১: সংগঠনের অর্থ আত্মসাৎ, প্রতারণা, গুরুতর অসদাচরণ বা সংগঠনের ক্ষতিসাধন শৃঙ্খলাভঙ্গ হিসেবে বিবেচিত হবে।
+ধারা ৫: নতুন কমিটির কাছে পূর্ববর্তী কমিটির হিসাব, নথি, সম্পদ ও দায়িত্ব বুঝিয়ে দিতে হবে।` },
+    { title: 'ত্রয়োদশ অধ্যায় — শৃঙ্খলা, অভিযোগ ও আপিল', body: `ধারা ১: সংগঠনের অর্থ আত্মসাৎ, প্রতারণা, গুরুতর অসদাচরণ বা সংগঠনের ক্ষতিসাধন শৃঙ্খলাভঙ্গ হিসেবে বিবেচিত হবে।
 ধারা ২: অভিযোগ লিখিতভাবে কর্তৃপক্ষের কাছে জমা দিতে হবে।
 ধারা ৩: অভিযোগ নিরপেক্ষভাবে তদন্ত করতে হবে।
 ধারা ৪: অভিযুক্ত সদস্যকে অভিযোগ জানানো ও আত্মপক্ষ সমর্থনের যথাযথ সুযোগ দিতে হবে।
 ধারা ৫: অভিযোগ প্রমাণিত হলে সতর্কতা, সাময়িক স্থগিতাদেশ বা সদস্যপদ বাতিলের মতো ব্যবস্থা নেওয়া যাবে।
-ধারা ৬: সিদ্ধান্তের বিরুদ্ধে সাধারণ পরিষদে আপিলের সুযোগ থাকবে।`
-    },
-    {
-      title: 'চতুর্দশ অধ্যায় — গঠনতন্ত্র সংশোধন',
-      body: `ধারা ১: সংগঠনের প্রয়োজনে গঠনতন্ত্র সংশোধনের প্রস্তাব করা যাবে।
+ধারা ৬: সিদ্ধান্তের বিরুদ্ধে সাধারণ পরিষদে আপিলের সুযোগ থাকবে।` },
+    { title: 'চতুর্দশ অধ্যায় — গঠনতন্ত্র সংশোধন', body: `ধারা ১: সংগঠনের প্রয়োজনে গঠনতন্ত্র সংশোধনের প্রস্তাব করা যাবে।
 ধারা ২: সংশোধনী প্রস্তাবের কারণ ও প্রস্তাবিত পরিবর্তন সদস্যদের জানাতে হবে।
 ধারা ৩: সাধারণ সভায় অনুমোদিত পদ্ধতি ও প্রয়োজনীয় সংখ্যাগরিষ্ঠতার ভিত্তিতে সংশোধনী গৃহীত হবে।
 ধারা ৪: অনুমোদিত সংশোধনীর তারিখ ও বিবরণ সংরক্ষণ করতে হবে।
-ধারা ৫: প্রচলিত আইন বা প্রযোজ্য নিবন্ধন শর্তের সঙ্গে সামঞ্জস্য বজায় রাখতে হবে।`
-    },
-    {
-      title: 'পঞ্চদশ অধ্যায় — সংগঠন বিলুপ্তি ও সম্পদ',
-      body: `ধারা ১: সংগঠন বিলুপ্তির প্রস্তাব সাধারণ পরিষদের বিশেষ সভায় উত্থাপন করতে হবে।
+ধারা ৫: প্রচলিত আইন বা প্রযোজ্য নিবন্ধন শর্তের সঙ্গে সামঞ্জস্য বজায় রাখতে হবে।` },
+    { title: 'পঞ্চদশ অধ্যায় — সংগঠন বিলুপ্তি ও সম্পদ', body: `ধারা ১: সংগঠন বিলুপ্তির প্রস্তাব সাধারণ পরিষদের বিশেষ সভায় উত্থাপন করতে হবে।
 ধারা ২: বিলুপ্তির সিদ্ধান্ত অনুমোদিত পদ্ধতি ও প্রযোজ্য আইন অনুসারে গ্রহণ করতে হবে।
 ধারা ৩: বিলুপ্তির আগে সকল দায়-দেনা ও বৈধ পাওনা নিষ্পত্তি করতে হবে।
 ধারা ৪: অবশিষ্ট সম্পদ কোনো সদস্যের মধ্যে ব্যক্তিগতভাবে বণ্টন করা যাবে না।
-ধারা ৫: অবশিষ্ট সম্পদ আইনসম্মতভাবে অনুরূপ অলাভজনক জনকল্যাণমূলক কাজে হস্তান্তরের সিদ্ধান্ত নিতে হবে।`
-    },
-    {
-      title: 'ষোড়শ অধ্যায় — অন্তর্বর্তী ও চূড়ান্ত বিধান',
-      body: `ধারা ১: এই গঠনতন্ত্রের ব্যাখ্যা নিয়ে মতভেদ হলে সাধারণ পরিষদে আলোচনা করে সিদ্ধান্ত নিতে হবে।
+ধারা ৫: অবশিষ্ট সম্পদ আইনসম্মতভাবে অনুরূপ অলাভজনক জনকল্যাণমূলক কাজে হস্তান্তরের সিদ্ধান্ত নিতে হবে।` },
+    { title: 'ষোড়শ অধ্যায় — অন্তর্বর্তী ও চূড়ান্ত বিধান', body: `ধারা ১: এই গঠনতন্ত্রের ব্যাখ্যা নিয়ে মতভেদ হলে সাধারণ পরিষদে আলোচনা করে সিদ্ধান্ত নিতে হবে।
 ধারা ২: গঠনতন্ত্রের কোনো ধারা দেশের প্রচলিত আইনের সঙ্গে সাংঘর্ষিক হলে প্রচলিত আইন প্রাধান্য পাবে।
 ধারা ৩: এই গঠনতন্ত্রের কার্যকারিতা সাধারণ সভায় অনুমোদনের তারিখ থেকে শুরু হবে।
 ধারা ৪: অনুমোদনের তারিখ: [সাধারণ সভায় পূরণ করতে হবে]।
-ধারা ৫: এই নথিটি বর্তমানে একটি খসড়া; সাধারণ পরিষদের আলোচনা ও অনুমোদনের আগে একে চূড়ান্ত বা আইনগতভাবে নিবন্ধিত গঠনতন্ত্র হিসেবে গণ্য করা যাবে না।`
-    }
+ধারা ৫: এই নথিটি বর্তমানে একটি খসড়া; সাধারণ পরিষদের আলোচনা ও অনুমোদনের আগে একে চূড়ান্ত বা আইনগতভাবে নিবন্ধিত গঠনতন্ত্র হিসেবে গণ্য করা যাবে না।` }
   ];
+}
+
+/* CONSTITUTION STATUS */
+
+async function loadConstitutionStatus() {
+  const snap = await getDoc(doc(db, 'constitution', '_settings'));
+  constitutionStatus = snap.exists()
+    ? (snap.data().status === 'approved' ? 'approved' : 'draft')
+    : 'draft';
+
+  return constitutionStatus;
+}
+
+async function saveConstitutionStatus() {
+  try {
+    const status = $('#constitutionStatus').value;
+
+    await setDoc(doc(db, 'constitution', '_settings'), {
+      status: status === 'approved' ? 'approved' : 'draft',
+      updatedAt: serverTimestamp(),
+      updatedBy: currentUser.uid
+    }, { merge: true });
+
+    constitutionStatus = status === 'approved' ? 'approved' : 'draft';
+
+    alert('গঠনতন্ত্রের অনুমোদনের অবস্থা সংরক্ষণ হয়েছে।');
+    await refreshAdmin();
+  } catch (error) {
+    console.error(error);
+    alert('অবস্থা সংরক্ষণ করা যায়নি: ' + error.message);
+  }
 }
 
 function renderConstitution(items) {
   const list = sortByOrder(items.length ? items : defaultConstitution());
 
+  const approved = constitutionStatus === 'approved';
+
   return `
+    <div class="constitution-cover">
+      <div class="constitution-symbol">📖</div>
+      <h2>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</h2>
+      <h3>গঠনতন্ত্র</h3>
+      <p>একতাই শক্তি</p>
+      <span class="constitution-status ${approved ? 'approved' : 'draft'}">
+        ${approved ? 'সাধারণ সভায় অনুমোদিত' : 'অনুমোদনের অপেক্ষায়'}
+      </span>
+    </div>
     <div class="noticeitem" style="border-left-color:#d2a943">
       <b>গুরুত্বপূর্ণ ঘোষণা</b>
-      <p>এটি সংগঠনের গঠনতন্ত্রের খসড়া। সাধারণ সভার আলোচনা ও অনুমোদনের পর চূড়ান্ত হবে।</p>
+      <p>${approved
+        ? 'এই গঠনতন্ত্র সংগঠনের সাধারণ সভায় অনুমোদিত হিসেবে চিহ্নিত। এটি সরকারি নিবন্ধনের প্রমাণ নয়।'
+        : 'এটি সংগঠনের গঠনতন্ত্রের খসড়া। সাধারণ সভার আলোচনা ও অনুমোদনের আগে চূড়ান্ত নয়।'
+      }</p>
     </div>
     ${list.map(item => `
       <article class="noticeitem rule-card">
@@ -545,7 +536,11 @@ async function loadMemberConstitution() {
   if (!box) return;
 
   try {
-    const items = await getList('constitution');
+    const [items] = await Promise.all([
+      getList('constitution').then(list => list.filter(x => x.id !== '_settings')),
+      loadConstitutionStatus()
+    ]);
+
     box.innerHTML = renderConstitution(items);
   } catch (error) {
     console.error(error);
@@ -570,10 +565,14 @@ function receiptDate(payment) {
 function openReceipt(payment) {
   const number = receiptNumber(payment);
 
-  const memberName = profile?.name ||
-    profile?.fullName ||
-    profile?.phone ||
-    currentUser?.phoneNumber || '';
+  const memberName = payment.memberName ||
+    payment.memberPhone ||
+    'নাম সংরক্ষিত নেই';
+
+  const memberId = payment.memberId ||
+    (payment.memberUid
+      ? payment.memberUid.slice(0, 10).toUpperCase()
+      : 'সংরক্ষিত নেই');
 
   const receiptWindow = window.open('', '_blank');
 
@@ -611,7 +610,7 @@ function openReceipt(payment) {
         <h2>টাকা জমার রশিদ</h2>
         <div class="line"><span>রশিদ নম্বর</span><b>${escapeHTML(number)}</b></div>
         <div class="line"><span>সদস্যের নাম</span><b>${escapeHTML(memberName)}</b></div>
-        <div class="line"><span>সদস্য আইডি</span><b>${escapeHTML(currentUser.uid.slice(0, 10).toUpperCase())}</b></div>
+        <div class="line"><span>সদস্য আইডি</span><b>${escapeHTML(memberId)}</b></div>
         <div class="line"><span>চাঁদার মাস</span><b>${escapeHTML(payment.month || '')}</b></div>
         <div class="line"><span>জমার তারিখ</span><b>${escapeHTML(receiptDate(payment))}</b></div>
         <div class="line"><span>জমার মাধ্যম</span><b>${escapeHTML(payment.method || 'নগদ')}</b></div>
@@ -706,14 +705,11 @@ async function memberView() {
       <div data-page="constitution" hidden>
         <section class="panel">
           <h2 class="heading-purple">সংগঠনের গঠনতন্ত্র</h2>
-          <p>সংগঠনের গঠনতন্ত্রের খসড়া ও ধারাসমূহ।</p>
           <div id="memberConstitution">লোড হচ্ছে...</div>
         </section>
       </div>
 
-      <div data-page="contact" hidden>
-        ${contactHTML()}
-      </div>
+      <div data-page="contact" hidden>${contactHTML()}</div>
     </main>
 
     ${bottomNavigation([
@@ -723,7 +719,6 @@ async function memberView() {
       { id: 'activities', icon: '☆', label: 'কার্যক্রম' },
       { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
     ])}
-
     ${footer()}`;
 
   bindLogout();
@@ -921,7 +916,15 @@ async function adminView() {
       <div data-page="constitutionAdmin" hidden>
         <section class="panel">
           <h2 class="heading-purple">গঠনতন্ত্র পরিচালনা</h2>
-          <p>নিচের খসড়াটি সাধারণ সভায় অনুমোদন সাপেক্ষে চূড়ান্ত করতে হবে।</p>
+          <p>গঠনতন্ত্র সাধারণ সভায় অনুমোদনের পর অনুমোদিত হিসেবে চিহ্নিত করুন।</p>
+
+          <label>গঠনতন্ত্রের অনুমোদনের অবস্থা</label>
+          <select id="constitutionStatus">
+            <option value="draft">অনুমোদনের অপেক্ষায়</option>
+            <option value="approved">সাধারণ সভায় অনুমোদিত</option>
+          </select>
+          <button class="secondary" id="saveConstitutionStatus">অবস্থা সংরক্ষণ করুন</button>
+
           <label>ধারা / অধ্যায়ের শিরোনাম</label>
           <input id="constitutionTitle" placeholder="যেমন: প্রথম অধ্যায় — নাম ও পরিচয়">
           <label>বিস্তারিত</label>
@@ -935,9 +938,7 @@ async function adminView() {
         </section>
       </div>
 
-      <div data-page="contact" hidden>
-        ${contactHTML()}
-      </div>
+      <div data-page="contact" hidden>${contactHTML()}</div>
     </main>
 
     ${bottomNavigation([
@@ -947,7 +948,6 @@ async function adminView() {
       { id: 'content', icon: '▤', label: 'প্রকাশনা' },
       { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
     ])}
-
     ${footer()}`;
 
   bindLogout();
@@ -963,6 +963,7 @@ async function adminView() {
   $('#cancelRuleEdit').onclick = cancelRuleEdit;
   $('#saveConstitution').onclick = saveConstitution;
   $('#cancelConstitutionEdit').onclick = cancelConstitutionEdit;
+  $('#saveConstitutionStatus').onclick = saveConstitutionStatus;
 
   await refreshAdmin();
 }
@@ -970,7 +971,8 @@ async function adminView() {
 /* ADMIN DATA */
 
 async function ensureDefaultConstitution(items) {
-  if (items.length) return items;
+  const chapters = items.filter(item => item.id !== '_settings');
+  if (chapters.length) return chapters;
 
   const defaults = defaultConstitution();
 
@@ -984,7 +986,7 @@ async function ensureDefaultConstitution(items) {
     });
   }
 
-  return await getList('constitution');
+  return (await getList('constitution')).filter(x => x.id !== '_settings');
 }
 
 async function refreshAdmin() {
@@ -999,6 +1001,8 @@ async function refreshAdmin() {
         getList('rules'),
         getList('constitution')
       ]);
+
+    await loadConstitutionStatus();
 
     const members = users.filter(u => u.status === 'approved');
     const pending = users.filter(u => u.status === 'pending');
@@ -1068,6 +1072,10 @@ async function refreshAdmin() {
 
     const constitutionItems = await ensureDefaultConstitution(constitution);
     renderAdminConstitution(sortByOrder(constitutionItems));
+
+    if ($('#constitutionStatus')) {
+      $('#constitutionStatus').value = constitutionStatus;
+    }
   } catch (error) {
     console.error(error);
     alert('অ্যাডমিন তথ্য লোড হয়নি। Firestore Rules পরীক্ষা করুন।');
@@ -1089,7 +1097,7 @@ function selectedMember(id) {
   const uid = select.value;
   const phone = select.selectedOptions[0]?.dataset.phone || '';
 
-  if (!uid) throw new Error('সদস্য নির্বাচন করুন。');
+  if (!uid) throw new Error('সদস্য নির্বাচন করুন।');
   return { uid, phone };
 }
 
@@ -1133,8 +1141,20 @@ async function savePayment() {
       throw new Error('মাস ও সঠিক জমার পরিমাণ দিন।');
     }
 
+    const memberSnap = await getDoc(doc(db, 'users', member.uid));
+    const memberData = memberSnap.exists() ? memberSnap.data() : {};
+
+    const memberName = memberData.name ||
+      memberData.fullName ||
+      member.phone ||
+      'নাম সংরক্ষিত নেই';
+
+    const memberId = member.uid.slice(0, 10).toUpperCase();
+
     const paymentRef = await addDoc(collection(db, 'payments'), {
       memberUid: member.uid,
+      memberName,
+      memberId,
       memberPhone: member.phone,
       month,
       amount,
@@ -1362,7 +1382,7 @@ function renderAdminConstitution(items) {
   const box = $('#adminConstitution');
   if (!box) return;
 
-  const sorted = sortByOrder(items);
+  const sorted = sortByOrder(items.filter(item => item.id !== '_settings'));
 
   box.innerHTML = sorted.length
     ? sorted.map(item => `
@@ -1401,7 +1421,9 @@ async function saveConstitution() {
       });
       alert('গঠনতন্ত্র সম্পাদনা করা হয়েছে।');
     } else {
-      const existing = await getList('constitution');
+      const existing = (await getList('constitution'))
+        .filter(item => item.id !== '_settings');
+
       const nextOrder = existing.reduce(
         (max, item) => Math.max(max, Number(item.sortOrder || 0)), 0
       ) + 1;
@@ -1424,6 +1446,8 @@ async function saveConstitution() {
 }
 
 function editConstitution(id, items) {
+  if (id === '_settings') return;
+
   const item = items.find(x => x.id === id);
   if (!item) return;
 
@@ -1445,6 +1469,8 @@ function cancelConstitutionEdit() {
 }
 
 async function deleteConstitution(id) {
+  if (id === '_settings') return;
+
   if (!confirm('আপনি কি এই গঠনতন্ত্রের অংশটি মুছে ফেলতে চান?')) return;
 
   try {
