@@ -11,7 +11,8 @@ import {
 
 import {
   doc, getDoc, setDoc, collection, query, where,
-  getDocs, orderBy, limit, addDoc, serverTimestamp
+  getDocs, orderBy, limit, addDoc, serverTimestamp,
+  updateDoc
 } from 'firebase/firestore';
 
 const $ = (s) => document.querySelector(s);
@@ -22,6 +23,7 @@ let currentUser = null;
 let profile = null;
 
 const app = $('#app');
+const LOGO_URL = '/logo.png';
 
 const contact = {
   phone: '+8801602267423',
@@ -34,6 +36,17 @@ function escapeHTML(value = '') {
     '&': '&amp;', '<': '&lt;', '>': '&gt;',
     '"': '&quot;', "'": '&#39;'
   })[c]);
+}
+
+function logoHTML() {
+  return `
+    <img
+      class="brandmark"
+      src="${LOGO_URL}"
+      alt="উত্তর নলটেক সমাজ কল্যাণ সংগঠনের লোগো"
+      onerror="this.outerHTML='<div class=&quot;brandmark&quot;>উ</div>'"
+    >
+  `;
 }
 
 function formatPhone(value) {
@@ -51,31 +64,38 @@ function formatPhone(value) {
 function loginView() {
   app.innerHTML = `
     <header>
-      <div class="brandmark">উ</div>
-      <div><b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
-      <small>একতাই শক্তি · Unity is Strength</small></div>
+      ${logoHTML()}
+      <div>
+        <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
+        <small>একতাই শক্তি · Unity is Strength</small>
+      </div>
     </header>
+
     <main>
       <section class="hero">
         <div class="eyebrow">WELCOME</div>
         <h1>স্বাগতম</h1>
         <p>উত্তর নলটেক সমাজ কল্যাণ সংগঠনের সদস্য প্ল্যাটফর্মে আপনাকে স্বাগতম।</p>
       </section>
+
       <section class="panel">
         <h2>সদস্য লগইন</h2>
         <label>মোবাইল নম্বর</label>
         <input id="phone" placeholder="01XXXXXXXXX অথবা 05XXXXXXXX" />
         <div id="recaptcha-container"></div>
         <button class="primary" id="sendOtp">OTP পাঠান</button>
+
         <div id="otpArea" hidden>
           <label>OTP কোড</label>
           <input id="otp" inputmode="numeric" placeholder="৬ সংখ্যার কোড" />
           <button class="primary" id="verifyOtp">যাচাই করুন</button>
         </div>
+
         <p class="hint" id="message"></p>
       </section>
     </main>
-    <footer>মানবতার সেবায় · উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ</footer>
+
+    ${footer()}
   `;
 
   $('#sendOtp').onclick = sendOtp;
@@ -111,6 +131,7 @@ async function sendOtp() {
 async function verifyOtp() {
   try {
     const code = $('#otp').value.trim();
+
     if (!confirmation || !code) {
       throw new Error('OTP কোড লিখুন।');
     }
@@ -136,6 +157,7 @@ async function loadUser(user) {
       role: 'member',
       createdAt: serverTimestamp()
     });
+
     profile = {
       phone: user.phoneNumber,
       status: 'pending',
@@ -162,16 +184,22 @@ async function loadUser(user) {
 function baseHeader() {
   return `
     <header>
-      <div class="brandmark">উ</div>
-      <div><b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
-      <small>একতাই শক্তি · Unity is Strength</small></div>
+      ${logoHTML()}
+      <div>
+        <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
+        <small>একতাই শক্তি · Unity is Strength</small>
+      </div>
       <button class="ghost" id="logout">লগআউট</button>
     </header>
   `;
 }
 
 function footer() {
-  return `<footer>মানবতার সেবায় · উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ</footer>`;
+  return `
+    <footer>
+      মানবতার সেবায় · উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ
+    </footer>
+  `;
 }
 
 function bindLogout() {
@@ -188,7 +216,9 @@ function pendingView() {
         <p>আপনার সদস্য আবেদন অ্যাডমিনের অনুমোদনের অপেক্ষায় রয়েছে।</p>
         <span class="status">অনুমোদনের অপেক্ষায়</span>
       </section>
-    </main>` + footer();
+    </main>
+  ` + footer();
+
   bindLogout();
 }
 
@@ -199,7 +229,9 @@ function rejectedView() {
         <h2>আবেদন অনুমোদিত হয়নি</h2>
         <p>বিস্তারিত জানতে সংগঠনের অ্যাডমিনের সঙ্গে যোগাযোগ করুন।</p>
       </section>
-    </main>` + footer();
+    </main>
+  ` + footer();
+
   bindLogout();
 }
 
@@ -264,8 +296,10 @@ async function memberView() {
         <h2>সংগঠনের কার্যক্রম</h2>
         <div id="memberActivities">লোড হচ্ছে...</div>
       </section>
+
       ${contactHTML()}
-    </main>` + footer();
+    </main>
+  ` + footer();
 
   bindLogout();
 
@@ -400,7 +434,8 @@ async function adminView() {
       </section>
 
       ${contactHTML()}
-    </main>` + footer();
+    </main>
+  ` + footer();
 
   bindLogout();
 
@@ -427,8 +462,8 @@ async function refreshAdmin() {
     const members = users.filter(u => u.status === 'approved');
     const pending = users.filter(u => u.status === 'pending');
 
-    $('#memberCount').textContent = members.length;
-    $('#pendingCount').textContent = pending.length;
+    $('#memberCount').textContent = members.length.toLocaleString('bn-BD');
+    $('#pendingCount').textContent = pending.length.toLocaleString('bn-BD');
 
     const donationSum = donations.reduce((s, x) => s + Number(x.amount || 0), 0);
     const expenseSum = expenses.reduce((s, x) => s + Number(x.amount || 0), 0);
@@ -444,7 +479,8 @@ async function refreshAdmin() {
             <button data-approve="${u.id}">অনুমোদন</button>
             <button data-reject="${u.id}">বাতিল</button>
           </span>
-        </div>`).join('')
+        </div>
+      `).join('')
       : 'নতুন আবেদন নেই।';
 
     document.querySelectorAll('[data-approve]').forEach(b => {
@@ -461,7 +497,8 @@ async function refreshAdmin() {
           <b>${escapeHTML(u.phone || '')}</b>
           <p>সদস্য আইডি: ${escapeHTML(u.id.slice(0, 10).toUpperCase())}</p>
           <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
-        </div>`).join('')
+        </div>
+      `).join('')
       : 'কোনো অনুমোদিত সদস্য নেই।';
 
     const options = members.map(u =>
@@ -489,9 +526,7 @@ async function refreshAdmin() {
 
 async function changeStatus(uid, status) {
   try {
-    await import('firebase/firestore').then(({ updateDoc }) =>
-      updateDoc(doc(db, 'users', uid), { status })
-    );
+    await updateDoc(doc(db, 'users', uid), { status });
     alert('সদস্যের অবস্থা পরিবর্তন হয়েছে।');
     await refreshAdmin();
   } catch (error) {
@@ -503,7 +538,9 @@ function selectedMember(id) {
   const select = $(id);
   const uid = select.value;
   const phone = select.selectedOptions[0]?.dataset.phone || '';
+
   if (!uid) throw new Error('সদস্য নির্বাচন করুন।');
+
   return { uid, phone };
 }
 
@@ -528,6 +565,7 @@ async function saveDue() {
 
     alert('চাঁদা নির্ধারণ করা হয়েছে।');
     $('#dueAmount').value = '';
+    await refreshAdmin();
   } catch (error) {
     alert(error.message);
   }
@@ -580,6 +618,9 @@ async function saveDonation() {
     });
 
     alert('অনুদান সংরক্ষণ হয়েছে।');
+    $('#donor').value = '';
+    $('#donationAmount').value = '';
+    $('#donationPurpose').value = '';
     await refreshAdmin();
   } catch (error) {
     alert(error.message);
@@ -603,6 +644,9 @@ async function saveExpense() {
     });
 
     alert('খরচ সংরক্ষণ হয়েছে।');
+    $('#expensePurpose').value = '';
+    $('#expenseAmount').value = '';
+    $('#expenseDate').value = '';
     await refreshAdmin();
   } catch (error) {
     alert(error.message);
@@ -614,7 +658,9 @@ async function publishNotice() {
     const title = $('#noticeTitle').value.trim();
     const body = $('#noticeBody').value.trim();
 
-    if (!title || !body) throw new Error('শিরোনাম ও বিবরণ লিখুন।');
+    if (!title || !body) {
+      throw new Error('শিরোনাম ও বিবরণ লিখুন।');
+    }
 
     await addDoc(collection(db, 'notices'), {
       title, body,
@@ -635,7 +681,9 @@ async function saveActivity() {
     const title = $('#activityTitle').value.trim();
     const body = $('#activityBody').value.trim();
 
-    if (!title || !body) throw new Error('শিরোনাম ও বিবরণ লিখুন।');
+    if (!title || !body) {
+      throw new Error('শিরোনাম ও বিবরণ লিখুন।');
+    }
 
     await addDoc(collection(db, 'activities'), {
       title, body,
@@ -663,12 +711,17 @@ onAuthStateChanged(auth, async user => {
     await loadUser(user);
   } catch (error) {
     console.error(error);
+
     app.innerHTML = `
-      <main><section class="panel">
-      <h2>তথ্য লোড করা যায়নি</h2>
-      <p>${escapeHTML(error.message)}</p>
-      <button class="secondary" id="tryAgain">আবার চেষ্টা করুন</button>
-      </section></main>`;
+      <main>
+        <section class="panel">
+          <h2>তথ্য লোড করা যায়নি</h2>
+          <p>${escapeHTML(error.message)}</p>
+          <button class="secondary" id="tryAgain">আবার চেষ্টা করুন</button>
+        </section>
+      </main>
+    `;
+
     $('#tryAgain').onclick = () => loadUser(user);
   }
 });
