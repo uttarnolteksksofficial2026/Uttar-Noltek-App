@@ -373,12 +373,6 @@ async function loadUser(user) {
   try {
     const ref = doc(db, 'users', user.uid);
     const snap = await getDocFromServer(ref);
-    console.log('FIREBASE DATA:', snap.data());
-  'UID: ' + user.uid +
-  '\nDocument: ' + snap.exists() +
-  '\nRole: ' + (snap.exists() ? snap.data().role : 'নেই') +
-  '\nStatus: ' + (snap.exists() ? snap.data().status : 'নেই')
-);
   
       if (!snap.exists()) {
       await setDoc(ref, {
