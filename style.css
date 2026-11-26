@@ -852,4 +852,35 @@ textarea::placeholder {
   color: #087653;
   font-weight: 700;
   overflow-wrap: anywhere;
+}/* Make Bengali text clear and readable */
+html,
+body,
+button,
+input,
+select,
+textarea {
+  -webkit-font-smoothing: auto !important;
+  text-rendering: auto !important;
+  filter: none !important;
+}
+
+body {
+  color: #173b32 !important;
+  font-weight: 500;
+}
+
+.brand-title small,
+.tiles article span,
+.nav-item,
+.contact-details small {
+  color: #52675c !important;
+  font-size: 13px !important;
+}
+
+.panel p,
+.noticeitem p,
+.drawer-link {
+  color: #173b32;
+  font-size: 15px;
+  line-height: 1.8;
 }
