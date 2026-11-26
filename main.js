@@ -400,7 +400,7 @@ async function loadUser(user) {
     };
   } else {
     profile = snap.data();
-  }
+  }alert('Role: ' + profile.role + ' | Status: ' + profile.status);
 
   if (profile.status === 'pending') return pendingView();
   if (profile.status === 'rejected') return rejectedView();
