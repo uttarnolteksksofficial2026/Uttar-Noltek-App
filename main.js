@@ -60,7 +60,6 @@ function escapeHTML(value = '') {
     "'": '&#39;'
   })[c]);
 }
-
 function logoHTML() {
   return `<img class="brandmark" src="${LOGO_URL}" alt="সংগঠনের লোগো">`;
 }
