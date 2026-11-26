@@ -898,7 +898,6 @@ body {
   opacity: 1 !important;
   text-shadow: none !important;
 }
-
 /* Make menu navigation area white */
 .side-drawer .drawer-links {
   background: #fff !important;
@@ -906,7 +905,6 @@ body {
   border-radius: 16px !important;
   margin-top: 12px !important;
 }
-
 /* Clear, bold menu text */
 .side-drawer .drawer-link {
   background: #fff !important;
@@ -918,7 +916,6 @@ body {
   text-shadow: none !important;
   opacity: 1 !important;
 }
-
 /* Menu icons */
 .side-drawer .drawer-link .drawer-icon {
   color: #087653 !important;
