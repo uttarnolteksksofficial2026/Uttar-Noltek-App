@@ -271,6 +271,10 @@ function loginView() {
           লগইন করুন
         </button>
 
+        <button class="secondary" id="registerMember" type="button">
+          নতুন সদস্য অ্যাকাউন্ট খুলুন
+        </button>
+
         <button class="secondary" id="verifyOtp" type="button">
           পাসওয়ার্ড ভুলে গেছেন?
         </button>
@@ -285,9 +289,9 @@ function loginView() {
   `;
 
   $('#sendOtp').onclick = sendOtp;
+  $('#registerMember').onclick = registerMember;
   $('#verifyOtp').onclick = verifyOtp;
 }
-     
 async function sendOtp() {
   const message = $('#message');
   const button = $('#sendOtp');
