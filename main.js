@@ -372,7 +372,7 @@ async function loadUser(user) {
 
   try {
     const ref = doc(db, 'users', user.uid);
-    const snap = await getDoc(ref);alert(
+    const snap = await getDocFromServer(ref);
   'UID: ' + user.uid +
   '\nDocument: ' + snap.exists() +
   '\nRole: ' + (snap.exists() ? snap.data().role : 'নেই') +
