@@ -1004,3 +1004,41 @@ body {
 .side-drawer .drawer-links {
   background: #064b36 !important;
 }
+footer {
+  text-align: center !important;
+  width: 100%;
+  display: block;
+  margin: 0 auto;
+  padding: 20px 12px;
+  line-height: 1.8;
+  font-weight: 700;
+}
+.purpose-card {
+  margin: 20px 14px;
+  padding: 24px 20px;
+  background: linear-gradient(135deg, #ffffff, #edf8f0);
+  border: 1px solid #d5e9da;
+  border-radius: 22px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(6, 75, 54, 0.08);
+}
+
+.purpose-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.purpose-card h2 {
+  color: #064b36;
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 12px;
+}
+
+.purpose-card p {
+  color: #234b3b;
+  font-size: 16px;
+  line-height: 1.9;
+  font-weight: 500;
+  margin: 0;
+}
