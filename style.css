@@ -884,3 +884,21 @@ body {
   font-size: 15px;
   line-height: 1.8;
 }
+/* Menu text area: white background and clear text */
+.side-drawer .drawer-brand {
+  background: #ffffff !important;
+  color: #173b32 !important;
+}
+
+.side-drawer .drawer-brand b,
+.side-drawer .drawer-brand strong,
+.side-drawer .drawer-brand small,
+.side-drawer .drawer-brand > span {
+  color: #173b32 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.side-drawer .drawer-brand {
+  border-bottom: 1px solid #e0eae4 !important;
+}
