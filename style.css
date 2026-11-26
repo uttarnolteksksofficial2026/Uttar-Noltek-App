@@ -997,7 +997,6 @@ body {
   font-weight: 600;
   line-height: 1.9;
 }
-
 /* Drawer stays green - no blue */
 .side-drawer,
 .side-drawer .drawer-brand,
@@ -1065,7 +1064,6 @@ footer {
   white-space: normal !important;
   line-height: 1.9 !important;
 }
-
 footer::before,
 footer::after {
   display: none !important;
