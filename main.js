@@ -361,7 +361,28 @@ async function loadUser(user) {
   currentUser = user;
 
   const ref = doc(db, 'users', user.uid);
-  const snap = await getDoc(ref);
+  let snap = await getDoc(ref);
+
+  // UID দিয়ে না পেলে ইমেইল দিয়ে পুরোনো অ্যাকাউন্ট খুঁজবে
+  if (!snap.exists() && user.email) {
+    const q = query(
+      collection(db, 'users'),
+      where('email', '==', user.email)
+    );
+
+    const result = await getDocs(q);
+
+    if (!result.empty) {
+      const oldProfile = result.docs[0].data();
+
+      await setDoc(ref, {
+        ...oldProfile,
+        email: user.email
+      });
+
+      snap = await getDoc(ref);
+    }
+  }
 
   if (!snap.exists()) {
     await setDoc(ref, {
@@ -374,7 +395,6 @@ async function loadUser(user) {
 
     profile = {
       email: user.email || '',
-      phone: user.phoneNumber || '',
       status: 'pending',
       role: 'member'
     };
