@@ -12,9 +12,20 @@ import {
 } from 'firebase/auth';
 
 import {
-  doc, getDoc, setDoc, collection, where,
-  getDocs, orderBy, limit, addDoc, serverTimestamp,
-  updateDoc, deleteDoc, query
+  doc,
+  getDoc,
+  getDocFromServer,
+  setDoc,
+  collection,
+  where,
+  getDocs,
+  orderBy,
+  limit,
+  addDoc,
+  serverTimestamp,
+  updateDoc,
+  deleteDoc,
+  query
 } from 'firebase/firestore';
 
 const $ = s => document.querySelector(s);
