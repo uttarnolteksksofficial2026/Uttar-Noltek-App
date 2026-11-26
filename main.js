@@ -10,134 +10,137 @@ import {
 } from 'firebase/auth';
 
 import {
-  doc, getDoc, setDoc, updateDoc, collection, query,
-  where, getDocs, orderBy, limit, addDoc, serverTimestamp
+  doc, getDoc, setDoc, collection, query, where,
+  getDocs, orderBy, limit, addDoc, serverTimestamp
 } from 'firebase/firestore';
 
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
-  '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-}[c]));
+const $ = (s) => document.querySelector(s);
 
 let confirmation = null;
 let recaptcha = null;
 let currentUser = null;
 let profile = null;
 
-const money = n => Number(n || 0).toLocaleString('bn-BD') + ' টাকা';
-const monthNow = () => new Date().toISOString().slice(0, 7);
-const dateNow = () => new Date().toISOString().slice(0, 10);
-
 const app = $('#app');
-const logoUrl = '/logo.png';
 
-function shell(content) {
-  app.innerHTML = `
-    <header>
-      <img src="${logoUrl}" class="brandmark" alt="সংগঠনের লোগো">
-      <div>
-        <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
-        <small>একতাই শক্তি · Unity is Strength</small>
-      </div>
-      <button id="lang" class="ghost">EN</button>
-    </header>
-    <main>${content}</main>
-    <footer>
-      মানবতার সেবায় · উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ
-    </footer>
-  `;
+const contact = {
+  phone: '+8801602267423',
+  email: 'uttarnoltek.sks.official2026@gmail.com',
+  facebook: 'https://www.facebook.com/share/151EhhMPwC7/'
+};
 
-  $('#lang')?.addEventListener('click', () =>
-    alert('English interface পরবর্তী সংস্করণে যোগ করা হবে।')
-  );
+function escapeHTML(value = '') {
+  return String(value).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;',
+    '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+function formatPhone(value) {
+  let p = value.replace(/[\s-]/g, '');
+
+  if (/^01\d{9}$/.test(p)) return '+88' + p;
+  if (/^05\d{8}$/.test(p)) return '+966' + p.slice(1);
+  if (/^5\d{8}$/.test(p)) return '+966' + p;
+  if (/^\+8801\d{9}$/.test(p)) return p;
+  if (/^\+9665\d{8}$/.test(p)) return p;
+
+  throw new Error('সঠিক বাংলাদেশি অথবা সৌদি মোবাইল নম্বর দিন।');
 }
 
 function loginView() {
-  shell(`
-    <section class="hero">
-      <span class="eyebrow">COMMUNITY • SERVICE • UNITY</span>
-      <h1>একসাথে গড়ি<br>মানবিক সমাজ</h1>
-      <p>সদস্য নিবন্ধন, চাঁদা, অনুদান ও সমাজকল্যাণমূলক কার্যক্রম।</p>
-    </section>
+  app.innerHTML = `
+    <header>
+      <div class="brandmark">উ</div>
+      <div><b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
+      <small>একতাই শক্তি · Unity is Strength</small></div>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">WELCOME</div>
+        <h1>স্বাগতম</h1>
+        <p>উত্তর নলটেক সমাজ কল্যাণ সংগঠনের সদস্য প্ল্যাটফর্মে আপনাকে স্বাগতম।</p>
+      </section>
+      <section class="panel">
+        <h2>সদস্য লগইন</h2>
+        <label>মোবাইল নম্বর</label>
+        <input id="phone" placeholder="01XXXXXXXXX অথবা 05XXXXXXXX" />
+        <div id="recaptcha-container"></div>
+        <button class="primary" id="sendOtp">OTP পাঠান</button>
+        <div id="otpArea" hidden>
+          <label>OTP কোড</label>
+          <input id="otp" inputmode="numeric" placeholder="৬ সংখ্যার কোড" />
+          <button class="primary" id="verifyOtp">যাচাই করুন</button>
+        </div>
+        <p class="hint" id="message"></p>
+      </section>
+    </main>
+    <footer>মানবতার সেবায় · উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ</footer>
+  `;
 
-    <section class="panel">
-      <h2>সদস্য লগইন / নিবন্ধন</h2>
-      <label>বাংলাদেশি অথবা সৌদি মোবাইল নম্বর</label>
-      <input id="phone" placeholder="01XXXXXXXXX / 05XXXXXXXX" inputmode="tel">
-      <button id="send" class="primary">OTP পাঠান</button>
-      <div id="recaptcha-container"></div>
-      <div id="otpbox" hidden>
-        <label>SMS-এ পাওয়া OTP</label>
-        <input id="otp" placeholder="৬ সংখ্যার OTP" inputmode="numeric">
-        <button id="verify" class="primary">যাচাই করুন</button>
-      </div>
-      <p id="msg" class="hint">বাংলাদেশ ও সৌদি আরবের নম্বর ব্যবহার করতে পারবেন।</p>
-    </section>
-  `);
-
-  $('#send').onclick = sendOtp;
-  $('#verify').onclick = verifyOtp;
-}
-
-function phoneFormat(value) {
-  let v = String(value || '').replace(/[\s()-]/g, '');
-  if (v.startsWith('+')) return v;
-  if (v.startsWith('880') || v.startsWith('966')) return '+' + v;
-  if (/^01\d{9}$/.test(v)) return '+88' + v;
-  if (/^05\d{8}$/.test(v)) return '+966' + v.slice(1);
-  if (/^5\d{8}$/.test(v)) return '+966' + v;
-  return v;
+  $('#sendOtp').onclick = sendOtp;
+  $('#verifyOtp').onclick = verifyOtp;
 }
 
 async function sendOtp() {
-  const p = phoneFormat($('#phone').value);
-  if (!/^\+8801\d{9}$/.test(p) && !/^\+9665\d{8}$/.test(p)) {
-    $('#msg').textContent = 'সঠিক বাংলাদেশি অথবা সৌদি মোবাইল নম্বর দিন।';
-    return;
-  }
+  const message = $('#message');
 
-  $('#send').disabled = true;
   try {
+    const phone = formatPhone($('#phone').value.trim());
+    $('#sendOtp').disabled = true;
+    message.textContent = 'OTP পাঠানো হচ্ছে...';
+
     if (!recaptcha) {
       recaptcha = new RecaptchaVerifier(
-        auth, 'recaptcha-container', { size: 'normal' }
+        auth,
+        'recaptcha-container',
+        { size: 'normal' }
       );
+      await recaptcha.render();
     }
-    confirmation = await signInWithPhoneNumber(auth, p, recaptcha);
-    $('#otpbox').hidden = false;
-    $('#msg').textContent = 'OTP পাঠানো হয়েছে। SMS দেখে কোড লিখুন।';
-  } catch (e) {
-    $('#msg').textContent = 'OTP পাঠানো যায়নি: ' + e.message;
-    recaptcha?.clear();
-    recaptcha = null;
-  } finally {
-    $('#send').disabled = false;
+
+    confirmation = await signInWithPhoneNumber(auth, phone, recaptcha);
+    $('#otpArea').hidden = false;
+    message.textContent = 'OTP পাঠানো হয়েছে। কোড লিখুন।';
+  } catch (error) {
+    message.textContent = error.message || 'OTP পাঠানো যায়নি।';
+    $('#sendOtp').disabled = false;
   }
 }
 
 async function verifyOtp() {
-  if (!confirmation) return;
   try {
-    await confirmation.confirm($('#otp').value.trim());
-  } catch {
-    $('#msg').textContent = 'OTP সঠিক নয় অথবা মেয়াদ শেষ হয়েছে।';
+    const code = $('#otp').value.trim();
+    if (!confirmation || !code) {
+      throw new Error('OTP কোড লিখুন।');
+    }
+
+    $('#verifyOtp').disabled = true;
+    await confirmation.confirm(code);
+  } catch (error) {
+    $('#message').textContent = 'OTP সঠিক নয় অথবা মেয়াদ শেষ হয়েছে।';
+    $('#verifyOtp').disabled = false;
   }
 }
 
 async function loadUser(user) {
   currentUser = user;
+
   const ref = doc(db, 'users', user.uid);
   const snap = await getDoc(ref);
 
   if (!snap.exists()) {
-    profile = {
+    await setDoc(ref, {
       phone: user.phoneNumber,
       status: 'pending',
       role: 'member',
       createdAt: serverTimestamp()
+    });
+    profile = {
+      phone: user.phoneNumber,
+      status: 'pending',
+      role: 'member'
     };
-    await setDoc(ref, profile);
-    profile = { ...profile };
   } else {
     profile = snap.data();
   }
@@ -150,387 +153,400 @@ async function loadUser(user) {
   }
 
   if (profile.role === 'admin') {
-    await adminView();
-  } else {
-    await memberView();
+    return adminView();
   }
+
+  return memberView();
+}
+
+function baseHeader() {
+  return `
+    <header>
+      <div class="brandmark">উ</div>
+      <div><b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
+      <small>একতাই শক্তি · Unity is Strength</small></div>
+      <button class="ghost" id="logout">লগআউট</button>
+    </header>
+  `;
+}
+
+function footer() {
+  return `<footer>মানবতার সেবায় · উত্তর নলটেক, বাঘড়া, শ্রীনগর, মুন্সীগঞ্জ</footer>`;
+}
+
+function bindLogout() {
+  $('#logout').onclick = async () => {
+    await signOut(auth);
+  };
 }
 
 function pendingView() {
-  shell(`
-    <section class="panel center">
-      <div class="status">আবেদন জমা হয়েছে</div>
-      <h2>অ্যাডমিন অনুমোদনের অপেক্ষায়</h2>
-      <p>আপনার মোবাইল নম্বর যাচাই হয়েছে। অনুমোদনের পর সদস্য সুবিধা চালু হবে।</p>
-      <button id="out" class="secondary">লগআউট</button>
-    </section>
-  `);
-  $('#out').onclick = () => signOut(auth);
+  app.innerHTML = baseHeader() + `
+    <main>
+      <section class="panel center">
+        <h2>আবেদন জমা হয়েছে</h2>
+        <p>আপনার সদস্য আবেদন অ্যাডমিনের অনুমোদনের অপেক্ষায় রয়েছে।</p>
+        <span class="status">অনুমোদনের অপেক্ষায়</span>
+      </section>
+    </main>` + footer();
+  bindLogout();
 }
 
 function rejectedView() {
-  shell(`
-    <section class="panel center">
-      <h2>আবেদন অনুমোদিত হয়নি</h2>
-      <p>বিস্তারিত জানতে সংগঠনের অ্যাডমিনের সঙ্গে যোগাযোগ করুন।</p>
-      <button id="out" class="secondary">লগআউট</button>
-    </section>
-  `);
-  $('#out').onclick = () => signOut(auth);
+  app.innerHTML = baseHeader() + `
+    <main>
+      <section class="panel center">
+        <h2>আবেদন অনুমোদিত হয়নি</h2>
+        <p>বিস্তারিত জানতে সংগঠনের অ্যাডমিনের সঙ্গে যোগাযোগ করুন।</p>
+      </section>
+    </main>` + footer();
+  bindLogout();
 }
 
-function nav(title, description = '') {
-  return `
-    <section class="hero compact">
-      <span class="eyebrow">UTTAR NOLTEK SKS</span>
-      <h1>${title}</h1>
-      <p>${description}</p>
-    </section>
-  `;
-}
+async function getList(name, filters = []) {
+  let q = collection(db, name);
 
-function contactSection() {
-  return `
-    <section class="panel">
-      <h2>যোগাযোগ</h2>
-      <p>📞 মোবাইল: <a href="tel:+8801602267423">+8801602267423</a></p>
-      <p>✉️ ইমেল:
-        <a href="mailto:uttarnoltek.sks.official2026@gmail.com">
-          uttarnoltek.sks.official2026@gmail.com
-        </a>
-      </p>
-      <p>🌐 Facebook:
-        <a href="https://www.facebook.com/share/151EhhMPwC7/" target="_blank" rel="noopener">
-          সংগঠনের Facebook পেজ
-        </a>
-      </p>
-    </section>
-  `;
-}
+  if (filters.length) {
+    q = query(q, ...filters);
+  }
 
-async function getCollection(name, constraints = []) {
-  const q = query(collection(db, name), ...constraints);
   const snap = await getDocs(q);
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
+function money(amount) {
+  return '৳ ' + Number(amount || 0).toLocaleString('bn-BD');
+}
+
+function contactHTML() {
+  return `
+    <section class="panel">
+      <h2>যোগাযোগ</h2>
+      <p>মোবাইল: <a href="tel:${contact.phone}">${contact.phone}</a></p>
+      <p>ইমেইল: <a href="mailto:${contact.email}">${contact.email}</a></p>
+      <p><a href="${contact.facebook}" target="_blank" rel="noopener">Facebook পেজ</a></p>
+    </section>
+  `;
+}
+
 async function memberView() {
-  let notices = [], activities = [], dues = [], payments = [];
+  app.innerHTML = baseHeader() + `
+    <main>
+      <section class="hero">
+        <div class="eyebrow">MEMBER DASHBOARD</div>
+        <h1>সদস্য পরিচিতি</h1>
+        <p>${escapeHTML(profile.phone || currentUser.phoneNumber)}</p>
+        <span class="status">অনুমোদিত সদস্য</span>
+      </section>
+
+      <section class="panel">
+        <h2>সদস্য তথ্য</h2>
+        <p>সদস্য আইডি: ${escapeHTML(currentUser.uid.slice(0, 10).toUpperCase())}</p>
+        <p>মোবাইল: ${escapeHTML(profile.phone || '')}</p>
+      </section>
+
+      <section class="panel">
+        <h2>আমার চাঁদা</h2>
+        <div id="myDues">লোড হচ্ছে...</div>
+      </section>
+
+      <section class="panel">
+        <h2>আমার জমার ইতিহাস</h2>
+        <div id="myPayments">লোড হচ্ছে...</div>
+      </section>
+
+      <section class="panel">
+        <h2>নোটিশ ও ঘোষণা</h2>
+        <div id="memberNotices">লোড হচ্ছে...</div>
+      </section>
+
+      <section class="panel">
+        <h2>সংগঠনের কার্যক্রম</h2>
+        <div id="memberActivities">লোড হচ্ছে...</div>
+      </section>
+      ${contactHTML()}
+    </main>` + footer();
+
+  bindLogout();
 
   try {
-    notices = await getCollection('notices', [
-      orderBy('createdAt', 'desc'), limit(10)
+    const [dues, payments, notices, activities] = await Promise.all([
+      getList('dues', [where('memberUid', '==', currentUser.uid)]),
+      getList('payments', [where('memberUid', '==', currentUser.uid)]),
+      getList('notices', [orderBy('createdAt', 'desc'), limit(30)]),
+      getList('activities', [orderBy('createdAt', 'desc'), limit(30)])
     ]);
-    activities = await getCollection('activities', [
-      orderBy('createdAt', 'desc'), limit(10)
-    ]);
-    dues = await getCollection('dues', [
-      where('memberUid', '==', currentUser.uid)
-    ]);
-    payments = await getCollection('payments', [
-      where('memberUid', '==', currentUser.uid)
-    ]);
-  } catch (e) {
-    console.error(e);
+
+    $('#myDues').innerHTML = dues.length
+      ? dues.map(d => `<div class="noticeitem">${escapeHTML(d.month)} — ${money(d.amount)}</div>`).join('')
+      : 'এখনো কোনো চাঁদা নির্ধারণ করা হয়নি।';
+
+    $('#myPayments').innerHTML = payments.length
+      ? payments.map(p => `<div class="noticeitem">${escapeHTML(p.month)} — ${money(p.amount)} — ${escapeHTML(p.method || 'নগদ')}</div>`).join('')
+      : 'এখনো কোনো জমার তথ্য নেই।';
+
+    $('#memberNotices').innerHTML = notices.length
+      ? notices.map(n => `<div class="noticeitem"><b>${escapeHTML(n.title)}</b><p>${escapeHTML(n.body)}</p></div>`).join('')
+      : 'এখনো কোনো নোটিশ প্রকাশিত হয়নি।';
+
+    $('#memberActivities').innerHTML = activities.length
+      ? activities.map(a => `<div class="noticeitem"><b>${escapeHTML(a.title)}</b><p>${escapeHTML(a.body || '')}</p></div>`).join('')
+      : 'এখনো কোনো কার্যক্রম প্রকাশিত হয়নি।';
+  } catch (error) {
+    console.error(error);
+    alert('তথ্য লোড করতে সমস্যা হয়েছে।');
   }
-
-  const totalDue = dues.reduce((sum, d) => sum + Number(d.amount || 0), 0);
-  const totalPaid = payments
-    .filter(p => p.status === 'approved')
-    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
-
-  shell(`
-    ${nav('স্বাগতম', 'উত্তর নলটেক সমাজ কল্যাণ সংগঠনের সদস্য প্ল্যাটফর্ম')}
-
-    <div class="tiles">
-      <article><b>সদস্য পরিচিতি</b><span>${esc(profile.name || currentUser.phoneNumber)}</span></article>
-      <article><b>সদস্য অবস্থা</b><span class="approved">অনুমোদিত</span></article>
-      <article><b>নির্ধারিত চাঁদা</b><span>${money(totalDue)}</span></article>
-      <article><b>অনুমোদিত জমা</b><span>${money(totalPaid)}</span></article>
-    </div>
-
-    <section class="panel">
-      <h2>আমার সদস্য তথ্য</h2>
-      <p>মোবাইল: ${esc(currentUser.phoneNumber)}</p>
-      <p>সদস্য আইডি: ${esc(currentUser.uid.slice(0, 10).toUpperCase())}</p>
-      <p>নাম: ${esc(profile.name || 'তথ্য দেওয়া হয়নি')}</p>
-    </section>
-
-    <section class="panel">
-      <h2>আমার চাঁদার হিসাব</h2>
-      ${dues.length ? dues.map(d => `
-        <div class="noticeitem">
-          <b>${esc(d.month || '')}</b>
-          <p>নির্ধারিত: ${money(d.amount)}</p>
-        </div>
-      `).join('') : '<p class="hint">এখনো চাঁদা নির্ধারণ করা হয়নি।</p>'}
-    </section>
-
-    <section class="panel">
-      <h2>আমার জমার ইতিহাস</h2>
-      ${payments.length ? payments.map(p => `
-        <div class="noticeitem">
-          <b>${money(p.amount)}</b>
-          <p>${esc(p.month || '')} · ${esc(p.status || 'অপেক্ষমাণ')}</p>
-        </div>
-      `).join('') : '<p class="hint">এখনো কোনো জমার তথ্য নেই।</p>'}
-    </section>
-
-    <section class="panel">
-      <h2>নোটিশ ও ঘোষণা</h2>
-      ${notices.length ? notices.map(n => `
-        <div class="noticeitem">
-          <b>${esc(n.title)}</b><p>${esc(n.body)}</p>
-        </div>
-      `).join('') : '<p class="hint">এখনো কোনো নোটিশ প্রকাশিত হয়নি।</p>'}
-    </section>
-
-    <section class="panel">
-      <h2>সংগঠনের কার্যক্রম</h2>
-      ${activities.length ? activities.map(a => `
-        <div class="noticeitem">
-          <b>${esc(a.title)}</b><p>${esc(a.description)}</p>
-        </div>
-      `).join('') : '<p class="hint">এখনো কোনো কার্যক্রম যোগ করা হয়নি।</p>'}
-    </section>
-
-    ${contactSection()}
-    <button id="out" class="secondary full">লগআউট</button>
-  `);
-
-  $('#out').onclick = () => signOut(auth);
 }
 
 async function adminView() {
-  let members = [], dues = [], payments = [], donations = [];
-  let expenses = [], notices = [], activities = [];
+  app.innerHTML = baseHeader() + `
+    <main>
+      <section class="hero">
+        <div class="eyebrow">ADMIN DASHBOARD</div>
+        <h1>অ্যাডমিন প্যানেল</h1>
+        <p>সংগঠনের সদস্য ও সকল কার্যক্রম পরিচালনা করুন।</p>
+      </section>
 
-  try {
-    [
-      members, dues, payments, donations, expenses, notices, activities
-    ] = await Promise.all([
-      getCollection('users'),
-      getCollection('dues'),
-      getCollection('payments'),
-      getCollection('donations'),
-      getCollection('expenses'),
-      getCollection('notices', [orderBy('createdAt', 'desc'), limit(20)]),
-      getCollection('activities', [orderBy('createdAt', 'desc'), limit(20)])
-    ]);
-  } catch (e) {
-    console.error(e);
-  }
+      <section class="tiles">
+        <article><b id="memberCount">০</b><span>মোট সদস্য</span></article>
+        <article><b id="pendingCount">০</b><span>নতুন আবেদন</span></article>
+        <article><b id="donationTotal">৳ ০</b><span>মোট অনুদান</span></article>
+        <article><b id="expenseTotal">৳ ০</b><span>মোট খরচ</span></article>
+      </section>
 
-  const pending = members.filter(m => m.status === 'pending');
-  const approved = members.filter(m => m.status === 'approved');
-  const paid = payments.filter(p => p.status === 'approved')
-    .reduce((s, p) => s + Number(p.amount || 0), 0);
-  const donationTotal = donations.reduce((s, d) => s + Number(d.amount || 0), 0);
-  const expenseTotal = expenses.reduce((s, d) => s + Number(d.amount || 0), 0);
+      <section class="panel">
+        <h2>সদস্য আবেদন</h2>
+        <div id="applicationList">লোড হচ্ছে...</div>
+      </section>
 
-  shell(`
-    ${nav('সুপার অ্যাডমিন ড্যাশবোর্ড', 'সংগঠনের সকল কার্যক্রম পরিচালনা করুন')}
+      <section class="panel">
+        <h2>সদস্য তালিকা</h2>
+        <div id="memberList">লোড হচ্ছে...</div>
+      </section>
 
-    <div class="tiles">
-      <article><b>মোট সদস্য</b><span>${approved.length}</span></article>
-      <article><b>অপেক্ষমাণ আবেদন</b><span>${pending.length}</span></article>
-      <article><b>মোট চাঁদা জমা</b><span>${money(paid)}</span></article>
-      <article><b>মোট অনুদান</b><span>${money(donationTotal)}</span></article>
-      <article><b>মোট খরচ</b><span>${money(expenseTotal)}</span></article>
-      <article><b>হিসাবের স্থিতি</b><span>${money(paid + donationTotal - expenseTotal)}</span></article>
-    </div>
+      <section class="panel">
+        <h2>মাসিক চাঁদা নির্ধারণ</h2>
+        <label>সদস্য নির্বাচন</label>
+        <select id="dueMember"></select>
+        <label>মাস</label>
+        <input id="dueMonth" type="month" />
+        <label>চাঁদার পরিমাণ (১০০–৫০০০ টাকা)</label>
+        <input id="dueAmount" type="number" min="100" max="5000" />
+        <button class="primary" id="saveDue">চাঁদা নির্ধারণ করুন</button>
+      </section>
 
-    <section class="panel">
-      <h2>সদস্য আবেদন</h2>
-      <div id="applicants">
-        ${pending.length ? pending.map(m => `
-          <div class="applicant">
-            <span>${esc(m.phone)}</span>
-            <button data-approve="${m.id}">অনুমোদন</button>
-            <button data-reject="${m.id}">প্রত্যাখ্যান</button>
-          </div>
-        `).join('') : '<p class="hint">নতুন আবেদন নেই।</p>'}
-      </div>
-    </section>
+      <section class="panel">
+        <h2>চাঁদা জমা গ্রহণ</h2>
+        <label>সদস্য নির্বাচন</label>
+        <select id="payMember"></select>
+        <label>মাস</label>
+        <input id="payMonth" type="month" />
+        <label>জমার পরিমাণ</label>
+        <input id="payAmount" type="number" min="1" />
+        <label>জমার মাধ্যম</label>
+        <select id="payMethod">
+          <option>নগদ</option>
+          <option>বিকাশ</option>
+          <option>নগদ (Nagad)</option>
+          <option>ব্যাংক</option>
+          <option>অন্যান্য</option>
+        </select>
+        <button class="primary" id="savePayment">জমা সংরক্ষণ করুন</button>
+      </section>
 
-    <section class="panel">
-      <h2>সদস্য তালিকা</h2>
-      <div class="table-wrap">
-        <table>
-          <tr><th>নাম / ফোন</th><th>অবস্থা</th><th>চাঁদা নির্ধারণ</th></tr>
-          ${approved.map(m => `
-            <tr>
-              <td>${esc(m.name || m.phone || m.id)}</td>
-              <td>${esc(m.status)}</td>
-              <td>
-                <button data-setdues="${m.id}" data-phone="${esc(m.phone || '')}">
-                  চাঁদা সেট
-                </button>
-              </td>
-            </tr>
-          `).join('')}
-        </table>
-      </div>
-    </section>
+      <section class="panel">
+        <h2>অনুদান যোগ করুন</h2>
+        <label>দাতার নাম</label>
+        <input id="donor" placeholder="দাতার নাম" />
+        <label>পরিমাণ</label>
+        <input id="donationAmount" type="number" min="1" />
+        <label>উদ্দেশ্য</label>
+        <input id="donationPurpose" placeholder="অনুদানের উদ্দেশ্য" />
+        <button class="primary" id="saveDonation">অনুদান সংরক্ষণ করুন</button>
+      </section>
 
-    <section class="panel">
-      <h2>সদস্যের মাসিক চাঁদা নির্ধারণ</h2>
-      <label>সদস্য নির্বাচন</label>
-      <select id="duemember">
-        <option value="">সদস্য নির্বাচন করুন</option>
-        ${approved.map(m => `
-          <option value="${m.id}">${esc(m.name || m.phone || m.id)}</option>
-        `).join('')}
-      </select>
-      <label>মাস</label>
-      <input id="duemonth" type="month" value="${monthNow()}">
-      <label>চাঁদার পরিমাণ (১০০–৫০০০ টাকা)</label>
-      <input id="dueamount" type="number" min="100" max="5000" step="1" placeholder="যেমন 500">
-      <button id="savedue" class="primary">চাঁদা নির্ধারণ করুন</button>
-    </section>
+      <section class="panel">
+        <h2>খরচ যোগ করুন</h2>
+        <label>খরচের বিবরণ</label>
+        <input id="expensePurpose" placeholder="খরচের বিবরণ" />
+        <label>পরিমাণ</label>
+        <input id="expenseAmount" type="number" min="1" />
+        <label>তারিখ</label>
+        <input id="expenseDate" type="date" />
+        <button class="primary" id="saveExpense">খরচ সংরক্ষণ করুন</button>
+      </section>
 
-    <section class="panel">
-      <h2>চাঁদা জমা রেকর্ড</h2>
-      <label>সদস্য</label>
-      <select id="paymember">
-        <option value="">সদস্য নির্বাচন করুন</option>
-        ${approved.map(m => `
-          <option value="${m.id}">${esc(m.name || m.phone || m.id)}</option>
-        `).join('')}
-      </select>
-      <label>মাস</label>
-      <input id="paymonth" type="month" value="${monthNow()}">
-      <label>জমার পরিমাণ</label>
-      <input id="payamount" type="number" min="1" placeholder="টাকার পরিমাণ">
-      <label>জমার মাধ্যম</label>
-      <select id="paymethod">
-        <option>নগদ</option>
-        <option>বিকাশ</option>
-        <option>নগদ (Nagad)</option>
-        <option>ব্যাংক</option>
-        <option>অন্যান্য</option>
-      </select>
-      <button id="savepayment" class="primary">জমা নিশ্চিত করুন</button>
-    </section>
+      <section class="panel">
+        <h2>নোটিশ প্রকাশ</h2>
+        <label>নোটিশের শিরোনাম</label>
+        <input id="noticeTitle" />
+        <label>নোটিশের বিবরণ</label>
+        <textarea id="noticeBody"></textarea>
+        <button class="primary" id="publishNotice">নোটিশ প্রকাশ করুন</button>
+      </section>
 
-    <section class="panel">
-      <h2>অনুদান যোগ করুন</h2>
-      <input id="donor" placeholder="দাতার নাম">
-      <input id="donationamount" type="number" min="1" placeholder="অনুদানের পরিমাণ">
-      <input id="donationpurpose" placeholder="অনুদানের উদ্দেশ্য">
-      <button id="savedonation" class="primary">অনুদান সংরক্ষণ করুন</button>
-    </section>
+      <section class="panel">
+        <h2>কার্যক্রম যোগ করুন</h2>
+        <label>কার্যক্রমের শিরোনাম</label>
+        <input id="activityTitle" />
+        <label>বিবরণ</label>
+        <textarea id="activityBody"></textarea>
+        <button class="primary" id="saveActivity">কার্যক্রম প্রকাশ করুন</button>
+      </section>
 
-    <section class="panel">
-      <h2>ব্যয়ের হিসাব</h2>
-      <input id="expensepurpose" placeholder="খরচের বিবরণ">
-      <input id="expenseamount" type="number" min="1" placeholder="খরচের পরিমাণ">
-      <input id="expensedate" type="date" value="${dateNow()}">
-      <button id="saveexpense" class="primary">ব্যয়ের হিসাব সংরক্ষণ</button>
-    </section>
+      <section class="panel">
+        <h2>আর্থিক হিসাব</h2>
+        <div id="financeReport">লোড হচ্ছে...</div>
+      </section>
 
-    <section class="panel">
-      <h2>নোটিশ প্রকাশ</h2>
-      <input id="ntitle" placeholder="নোটিশের শিরোনাম">
-      <textarea id="nbody" placeholder="নোটিশের বিবরণ"></textarea>
-      <button id="publish" class="primary">নোটিশ প্রকাশ করুন</button>
-    </section>
+      ${contactHTML()}
+    </main>` + footer();
 
-    <section class="panel">
-      <h2>সংগঠনের কার্যক্রম যোগ করুন</h2>
-      <input id="activitytitle" placeholder="কার্যক্রমের নাম">
-      <textarea id="activitydescription" placeholder="কার্যক্রমের বিবরণ"></textarea>
-      <button id="saveactivity" class="primary">কার্যক্রম প্রকাশ করুন</button>
-    </section>
+  bindLogout();
 
-    <section class="panel">
-      <h2>হিসাবের সারাংশ</h2>
-      <p>চাঁদা জমা: <b>${money(paid)}</b></p>
-      <p>অনুদান: <b>${money(donationTotal)}</b></p>
-      <p>ব্যয়: <b>${money(expenseTotal)}</b></p>
-      <p>বর্তমান হিসাব: <b>${money(paid + donationTotal - expenseTotal)}</b></p>
-      <p class="hint">এটি রেকর্ড করা লেনদেনের হিসাব; প্রকৃত ব্যাংক বা নগদ ব্যালেন্স নয়।</p>
-    </section>
+  $('#saveDue').onclick = saveDue;
+  $('#savePayment').onclick = savePayment;
+  $('#saveDonation').onclick = saveDonation;
+  $('#saveExpense').onclick = saveExpense;
+  $('#publishNotice').onclick = publishNotice;
+  $('#saveActivity').onclick = saveActivity;
 
-    ${contactSection()}
-    <button id="out" class="secondary full">লগআউট</button>
-  `);
-
-  $('#out').onclick = () => signOut(auth);
-
-  document.querySelectorAll('[data-approve]').forEach(b => {
-    b.onclick = () => changeMemberStatus(b.dataset.approve, 'approved');
-  });
-
-  document.querySelectorAll('[data-reject]').forEach(b => {
-    b.onclick = () => changeMemberStatus(b.dataset.reject, 'rejected');
-  });
-
-  document.querySelectorAll('[data-setdues]').forEach(b => {
-    b.onclick = () => {
-      $('#duemember').value = b.dataset.setdues;
-      $('#duemonth').focus();
-    };
-  });
-
-  $('#savedue').onclick = saveDue;
-  $('#savepayment').onclick = savePayment;
-  $('#savedonation').onclick = saveDonation;
-  $('#saveexpense').onclick = saveExpense;
-  $('#publish').onclick = publishNotice;
-  $('#saveactivity').onclick = saveActivity;
+  await refreshAdmin();
 }
 
-async function changeMemberStatus(uid, status) {
-  if (!confirm(status === 'approved' ? 'সদস্যকে অনুমোদন করবেন?' : 'আবেদন প্রত্যাখ্যান করবেন?')) return;
+async function refreshAdmin() {
   try {
-    await updateDoc(doc(db, 'users', uid), { status });
-    alert('সদস্যের অবস্থা পরিবর্তন হয়েছে।');
-    await adminView();
-  } catch (e) {
-    alert('পরিবর্তন করা যায়নি: ' + e.message);
+    const [users, dues, payments, donations, expenses] = await Promise.all([
+      getList('users'),
+      getList('dues'),
+      getList('payments'),
+      getList('donations'),
+      getList('expenses')
+    ]);
+
+    const members = users.filter(u => u.status === 'approved');
+    const pending = users.filter(u => u.status === 'pending');
+
+    $('#memberCount').textContent = members.length;
+    $('#pendingCount').textContent = pending.length;
+
+    const donationSum = donations.reduce((s, x) => s + Number(x.amount || 0), 0);
+    const expenseSum = expenses.reduce((s, x) => s + Number(x.amount || 0), 0);
+
+    $('#donationTotal').textContent = money(donationSum);
+    $('#expenseTotal').textContent = money(expenseSum);
+
+    $('#applicationList').innerHTML = pending.length
+      ? pending.map(u => `
+        <div class="applicant">
+          <span>${escapeHTML(u.phone || '')}</span>
+          <span>
+            <button data-approve="${u.id}">অনুমোদন</button>
+            <button data-reject="${u.id}">বাতিল</button>
+          </span>
+        </div>`).join('')
+      : 'নতুন আবেদন নেই।';
+
+    document.querySelectorAll('[data-approve]').forEach(b => {
+      b.onclick = () => changeStatus(b.dataset.approve, 'approved');
+    });
+
+    document.querySelectorAll('[data-reject]').forEach(b => {
+      b.onclick = () => changeStatus(b.dataset.reject, 'rejected');
+    });
+
+    $('#memberList').innerHTML = members.length
+      ? members.map(u => `
+        <div class="noticeitem">
+          <b>${escapeHTML(u.phone || '')}</b>
+          <p>সদস্য আইডি: ${escapeHTML(u.id.slice(0, 10).toUpperCase())}</p>
+          <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
+        </div>`).join('')
+      : 'কোনো অনুমোদিত সদস্য নেই।';
+
+    const options = members.map(u =>
+      `<option value="${escapeHTML(u.id)}" data-phone="${escapeHTML(u.phone || '')}">${escapeHTML(u.phone || u.id)}</option>`
+    ).join('');
+
+    $('#dueMember').innerHTML = options;
+    $('#payMember').innerHTML = options;
+
+    const paymentSum = payments.reduce((s, x) => s + Number(x.amount || 0), 0);
+    const dueSum = dues.reduce((s, x) => s + Number(x.amount || 0), 0);
+
+    $('#financeReport').innerHTML = `
+      <p>মোট নির্ধারিত চাঁদা: <b>${money(dueSum)}</b></p>
+      <p>মোট জমা: <b>${money(paymentSum)}</b></p>
+      <p>মোট অনুদান: <b>${money(donationSum)}</b></p>
+      <p>মোট খরচ: <b>${money(expenseSum)}</b></p>
+      <p>অনুদান ও জমা থেকে খরচ বাদে: <b>${money(paymentSum + donationSum - expenseSum)}</b></p>
+    `;
+  } catch (error) {
+    console.error(error);
+    alert('অ্যাডমিন তথ্য লোড হয়নি। Firestore Rules পরীক্ষা করুন।');
   }
+}
+
+async function changeStatus(uid, status) {
+  try {
+    await import('firebase/firestore').then(({ updateDoc }) =>
+      updateDoc(doc(db, 'users', uid), { status })
+    );
+    alert('সদস্যের অবস্থা পরিবর্তন হয়েছে।');
+    await refreshAdmin();
+  } catch (error) {
+    alert('পরিবর্তন করা যায়নি: ' + error.message);
+  }
+}
+
+function selectedMember(id) {
+  const select = $(id);
+  const uid = select.value;
+  const phone = select.selectedOptions[0]?.dataset.phone || '';
+  if (!uid) throw new Error('সদস্য নির্বাচন করুন।');
+  return { uid, phone };
 }
 
 async function saveDue() {
-  const uid = $('#duemember').value;
-  const month = $('#duemonth').value;
-  const amount = Number($('#dueamount').value);
-
-  if (!uid || !month || amount < 100 || amount > 5000) {
-    return alert('সদস্য, মাস এবং ১০০ থেকে ৫০০০ টাকার মধ্যে চাঁদা দিন।');
-  }
-
   try {
-    const member = await getDoc(doc(db, 'users', uid));
+    const member = selectedMember('#dueMember');
+    const month = $('#dueMonth').value;
+    const amount = Number($('#dueAmount').value);
+
+    if (!month || amount < 100 || amount > 5000) {
+      throw new Error('মাস নির্বাচন করুন এবং ১০০ থেকে ৫০০০ টাকার মধ্যে চাঁদা দিন।');
+    }
+
     await addDoc(collection(db, 'dues'), {
-      memberUid: uid,
-      memberPhone: member.data()?.phone || '',
+      memberUid: member.uid,
+      memberPhone: member.phone,
       month,
       amount,
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
+
     alert('চাঁদা নির্ধারণ করা হয়েছে।');
-    await adminView();
-  } catch (e) {
-    alert('চাঁদা সংরক্ষণ করা যায়নি: ' + e.message);
+    $('#dueAmount').value = '';
+  } catch (error) {
+    alert(error.message);
   }
 }
 
 async function savePayment() {
-  const uid = $('#paymember').value;
-  const month = $('#paymonth').value;
-  const amount = Number($('#payamount').value);
-  const method = $('#paymethod').value;
-
-  if (!uid || !month || amount <= 0) return alert('সঠিক তথ্য পূরণ করুন।');
-
   try {
-    const member = await getDoc(doc(db, 'users', uid));
+    const member = selectedMember('#payMember');
+    const month = $('#payMonth').value;
+    const amount = Number($('#payAmount').value);
+    const method = $('#payMethod').value;
+
+    if (!month || amount <= 0) {
+      throw new Error('মাস ও সঠিক জমার পরিমাণ দিন।');
+    }
+
     await addDoc(collection(db, 'payments'), {
-      memberUid: uid,
-      memberPhone: member.data()?.phone || '',
+      memberUid: member.uid,
+      memberPhone: member.phone,
       month,
       amount,
       method,
@@ -538,105 +554,121 @@ async function savePayment() {
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
-    alert('চাঁদা জমার হিসাব সংরক্ষিত হয়েছে।');
-    await adminView();
-  } catch (e) {
-    alert('জমার তথ্য সংরক্ষণ করা যায়নি: ' + e.message);
+
+    alert('জমার তথ্য সংরক্ষণ হয়েছে।');
+    $('#payAmount').value = '';
+    await refreshAdmin();
+  } catch (error) {
+    alert(error.message);
   }
 }
 
 async function saveDonation() {
-  const donor = $('#donor').value.trim();
-  const amount = Number($('#donationamount').value);
-  const purpose = $('#donationpurpose').value.trim();
-
-  if (!donor || amount <= 0) return alert('দাতার নাম ও টাকার পরিমাণ দিন।');
-
   try {
+    const donor = $('#donor').value.trim();
+    const amount = Number($('#donationAmount').value);
+    const purpose = $('#donationPurpose').value.trim();
+
+    if (!donor || amount <= 0 || !purpose) {
+      throw new Error('সব তথ্য পূরণ করুন।');
+    }
+
     await addDoc(collection(db, 'donations'), {
       donor, amount, purpose,
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
+
     alert('অনুদান সংরক্ষণ হয়েছে।');
-    await adminView();
-  } catch (e) {
-    alert('অনুদান সংরক্ষণ করা যায়নি: ' + e.message);
+    await refreshAdmin();
+  } catch (error) {
+    alert(error.message);
   }
 }
 
 async function saveExpense() {
-  const purpose = $('#expensepurpose').value.trim();
-  const amount = Number($('#expenseamount').value);
-  const date = $('#expensedate').value;
-
-  if (!purpose || amount <= 0 || !date) return alert('ব্যয়ের বিবরণ, পরিমাণ ও তারিখ দিন।');
-
   try {
+    const purpose = $('#expensePurpose').value.trim();
+    const amount = Number($('#expenseAmount').value);
+    const date = $('#expenseDate').value;
+
+    if (!purpose || amount <= 0 || !date) {
+      throw new Error('সব তথ্য পূরণ করুন।');
+    }
+
     await addDoc(collection(db, 'expenses'), {
       purpose, amount, date,
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
-    alert('ব্যয়ের হিসাব সংরক্ষিত হয়েছে।');
-    await adminView();
-  } catch (e) {
-    alert('ব্যয়ের হিসাব সংরক্ষণ করা যায়নি: ' + e.message);
+
+    alert('খরচ সংরক্ষণ হয়েছে।');
+    await refreshAdmin();
+  } catch (error) {
+    alert(error.message);
   }
 }
 
 async function publishNotice() {
-  const title = $('#ntitle').value.trim();
-  const body = $('#nbody').value.trim();
-
-  if (!title || !body) return alert('নোটিশের শিরোনাম ও বিবরণ লিখুন।');
-
   try {
+    const title = $('#noticeTitle').value.trim();
+    const body = $('#noticeBody').value.trim();
+
+    if (!title || !body) throw new Error('শিরোনাম ও বিবরণ লিখুন।');
+
     await addDoc(collection(db, 'notices'), {
       title, body,
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
-    alert('নোটিশ প্রকাশিত হয়েছে।');
-    await adminView();
-  } catch (e) {
-    alert('নোটিশ প্রকাশ করা যায়নি: ' + e.message);
+
+    alert('নোটিশ প্রকাশ হয়েছে।');
+    $('#noticeTitle').value = '';
+    $('#noticeBody').value = '';
+  } catch (error) {
+    alert(error.message);
   }
 }
 
 async function saveActivity() {
-  const title = $('#activitytitle').value.trim();
-  const description = $('#activitydescription').value.trim();
-
-  if (!title || !description) return alert('কার্যক্রমের নাম ও বিবরণ লিখুন।');
-
   try {
+    const title = $('#activityTitle').value.trim();
+    const body = $('#activityBody').value.trim();
+
+    if (!title || !body) throw new Error('শিরোনাম ও বিবরণ লিখুন।');
+
     await addDoc(collection(db, 'activities'), {
-      title, description,
+      title, body,
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
-    alert('কার্যক্রম প্রকাশিত হয়েছে।');
-    await adminView();
-  } catch (e) {
-    alert('কার্যক্রম সংরক্ষণ করা যায়নি: ' + e.message);
+
+    alert('কার্যক্রম প্রকাশ হয়েছে।');
+    $('#activityTitle').value = '';
+    $('#activityBody').value = '';
+  } catch (error) {
+    alert(error.message);
   }
 }
 
-onAuthStateChanged(auth, user => {
-  if (user) {
-    loadUser(user).catch(e => {
-      shell(`
-        <section class="panel">
-          <h2>লোড করতে সমস্যা হয়েছে</h2>
-          <p>${esc(e.message)}</p>
-          <button id="retry" class="secondary">আবার চেষ্টা করুন</button>
-          <button id="out" class="secondary">লগআউট</button>
-        </section>
-      `);
-      $('#retry').onclick = () => loadUser(user);
-      $('#out').onclick = () => signOut(auth);
-    });
-  } else {
+onAuthStateChanged(auth, async user => {
+  if (!user) {
     currentUser = null;
-    profile =
+    profile = null;
+    loginView();
+    return;
+  }
+
+  try {
+    await loadUser(user);
+  } catch (error) {
+    console.error(error);
+    app.innerHTML = `
+      <main><section class="panel">
+      <h2>তথ্য লোড করা যায়নি</h2>
+      <p>${escapeHTML(error.message)}</p>
+      <button class="secondary" id="tryAgain">আবার চেষ্টা করুন</button>
+      </section></main>`;
+    $('#tryAgain').onclick = () => loadUser(user);
+  }
+});
