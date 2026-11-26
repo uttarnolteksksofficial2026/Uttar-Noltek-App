@@ -356,6 +356,7 @@ async function verifyOtp() {
 
 /* AUTH */
 
+
 async function loadUser(user) {
   currentUser = user;
 
@@ -364,14 +365,16 @@ async function loadUser(user) {
 
   if (!snap.exists()) {
     await setDoc(ref, {
-      phone: user.phoneNumber,
+      email: user.email || '',
+      phone: user.phoneNumber || '',
       status: 'pending',
       role: 'member',
       createdAt: serverTimestamp()
     });
 
     profile = {
-      phone: user.phoneNumber,
+      email: user.email || '',
+      phone: user.phoneNumber || '',
       status: 'pending',
       role: 'member'
     };
@@ -384,6 +387,7 @@ async function loadUser(user) {
   if (profile.status !== 'approved') return pendingView();
 
   if (profile.role === 'admin') return adminView();
+
   return memberView();
 }
 
