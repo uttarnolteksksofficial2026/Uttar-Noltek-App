@@ -329,7 +329,45 @@ async function sendOtp() {
     button.disabled = false;
   }
 }
+async function registerMember() {
+  const message = $('#message');
+  const button = $('#registerMember');
 
+  const email = $('#email').value.trim();
+  const password = $('#password').value;
+
+  if (!email || !password) {
+    message.textContent = 'ইমেইল ও পাসওয়ার্ড লিখুন।';
+    return;
+  }
+
+  if (password.length < 6) {
+    message.textContent = 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।';
+    return;
+  }
+
+  button.disabled = true;
+  message.textContent = 'সদস্য অ্যাকাউন্ট তৈরি হচ্ছে...';
+
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    message.textContent = 'অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদনের অপেক্ষায় থাকুন।';
+  } catch (error) {
+    console.error('REGISTRATION ERROR:', error);
+
+    const errors = {
+      'auth/email-already-in-use': 'এই ইমেইলে আগে থেকেই অ্যাকাউন্ট আছে।',
+      'auth/invalid-email': 'সঠিক ইমেইল লিখুন।',
+      'auth/weak-password': 'পাসওয়ার্ড আরও শক্তিশালী করুন।',
+      'auth/network-request-failed': 'ইন্টারনেট সংযোগ পরীক্ষা করুন।'
+    };
+
+    message.textContent =
+      errors[error.code] || 'অ্যাকাউন্ট তৈরি করা যায়নি।';
+  } finally {
+    button.disabled = false;
+  }
+}
 async function verifyOtp() {
   const message = $('#message');
   const button = $('#verifyOtp');
