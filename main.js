@@ -305,263 +305,80 @@ function resetRecaptcha() {
   }
 }
 
+     
 async function sendOtp() {
-  if (otpSending) return;
-
-  otpSending = true;
-
   const message = $('#message');
-  const sendButton = $('#sendOtp');
-  const resendButton = $('#resendOtp');
+  const button = $('#sendOtp');
 
-  sendButton.disabled = true;
-  resendButton.disabled = true;
+  const email = $('#email').value.trim();
+  const password = $('#password').value;
 
-  try {
-    const phone = formatPhone($('#phone').value.trim());
-
-    auth.languageCode = 'bn';
-
-    confirmation = null;
-    resetRecaptcha();
-
-    message.textContent = 'নিরাপত্তা যাচাই করা হচ্ছে...';
-
-    recaptcha = new RecaptchaVerifier(
-      auth,
-      $('#recaptcha-container'),
-      {
-        size: 'invisible',
-        callback: () => {
-          message.textContent = 'নিরাপত্তা যাচাই সম্পন্ন।';
-        },
-        'expired-callback': () => {
-          message.textContent =
-            'নিরাপত্তা যাচাইয়ের সময় শেষ হয়েছে। আবার OTP পাঠান।';
-        }
-      }
-    );
-
-    await recaptcha.render();
-
-    message.textContent = 'আপনার নম্বরে OTP পাঠানো হচ্ছে...';
-
-    confirmation = await signInWithPhoneNumber(
-      auth,
-      phone,
-      recaptcha
-    );
-
-    $('#otpArea').hidden = false;
-    $('#otp').value = '';
-    $('#otp').focus();
-
-    message.textContent =
-      'OTP পাঠানো হয়েছে। SMS থেকে ৬ সংখ্যার কোড লিখুন।';
-
-  } catch (error) {
-    console.error('OTP SEND ERROR:', error);
-
-    const errors = {
-      'auth/invalid-phone-number':
-        'মোবাইল নম্বর সঠিক নয়।',
-
-      'auth/too-many-requests':
-        'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।',
-
-      'auth/quota-exceeded':
-        'Firebase-এর SMS সীমা শেষ হয়েছে।',
-
-      'auth/captcha-check-failed':
-        'নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
-
-      'auth/invalid-app-credential':
-        'Firebase reCAPTCHA যাচাই করতে পারেনি। আবার চেষ্টা করুন।',
-
-      'auth/missing-app-credential':
-        'নিরাপত্তা যাচাই সম্পন্ন হয়নি। আবার চেষ্টা করুন।',
-
-      'auth/unauthorized-domain':
-        'ওয়েবসাইটটি Firebase-এ অনুমোদিত নয়।',
-
-      'auth/operation-not-allowed':
-        'Firebase-এ Phone Authentication চালু নেই।',
-
-      'auth/network-request-failed':
-        'ইন্টারনেট সংযোগ পরীক্ষা করুন।',
-
-      'auth/billing-not-enabled':
-        'Firebase-এর বিলিং সেটিংস পরীক্ষা করতে হবে।'
-    };
-
-    message.textContent =
-      errors[error.code] ||
-      'OTP পাঠানো যায়নি: ' +
-      (error.message || 'অজানা সমস্যা');
-
-    confirmation = null;
-    resetRecaptcha();
-
-  } finally {
-    otpSending = false;
-    sendButton.disabled = false;
-    resendButton.disabled = false;
+  if (!email || !password) {
+    message.textContent = 'ইমেইল ও পাসওয়ার্ড লিখুন।';
+    return;
   }
-}
 
-async function verifyOtp() {
-  const button = $('#verifyOtp');
-  const message = $('#message');
+  button.disabled = true;
+  message.textContent = 'লগইন করা হচ্ছে...';
 
   try {
-    const code = $('#otp').value.trim();
-
-    if (!confirmation) {
-      throw new Error('আগে OTP পাঠান।');
-    }
-
-    if (!/^\d{6}$/.test(code)) {
-      throw new Error('সঠিক ৬ সংখ্যার OTP লিখুন।');
-    }
-
-    button.disabled = true;
-    message.textContent = 'OTP যাচাই করা হচ্ছে...';
-
-    await confirmation.confirm(code);
-
+    await signInWithEmailAndPassword(auth, email, password);
     message.textContent = 'লগইন সফল হয়েছে।';
 
     // onAuthStateChanged স্বয়ংক্রিয়ভাবে সদস্যের পেজ খুলবে
-
   } catch (error) {
-    console.error('OTP VERIFY ERROR:', error);
+    console.error('EMAIL LOGIN ERROR:', error);
 
     const errors = {
-      'auth/invalid-verification-code':
-        'OTP কোড ভুল হয়েছে। আবার লিখুন।',
-
-      'auth/code-expired':
-        'OTP-এর মেয়াদ শেষ হয়েছে। নতুন OTP নিন।',
-
-      'auth/session-expired':
-        'লগইন সেশন শেষ হয়েছে। নতুন OTP নিন।',
-
-      'auth/too-many-requests':
-        'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।'
+      'auth/invalid-email': 'সঠিক ইমেইল লিখুন।',
+      'auth/invalid-credential': 'ইমেইল অথবা পাসওয়ার্ড ভুল।',
+      'auth/user-not-found': 'এই ইমেইলে কোনো অ্যাকাউন্ট নেই।',
+      'auth/wrong-password': 'পাসওয়ার্ড ভুল হয়েছে।',
+      'auth/too-many-requests': 'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।',
+      'auth/network-request-failed': 'ইন্টারনেট সংযোগ পরীক্ষা করুন।',
+      'auth/operation-not-allowed': 'Firebase-এ Email/Password চালু নেই।'
     };
 
     message.textContent =
       errors[error.code] ||
       error.message ||
-      'OTP যাচাই করা যায়নি।';
-
-    if (
-      error.code === 'auth/code-expired' ||
-      error.code === 'auth/session-expired'
-    ) {
-      confirmation = null;
-      resetRecaptcha();
-    }
-
+      'লগইন করা যায়নি।';
   } finally {
     button.disabled = false;
-  }
-}
-
-try {
-    const phone = formatPhone($('#phone').value.trim());
-
-    button.disabled = true;
-    $('#resendOtp').disabled = true;
-    message.textContent = 'নিরাপত্তা যাচাই করা হচ্ছে...';
-
-    resetRecaptcha();
-
-    recaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      size: 'invisible',
-      callback: () => {
-        message.textContent = 'নিরাপত্তা যাচাই সম্পন্ন।';
-      },
-      'expired-callback': () => {
-        message.textContent = 'নিরাপত্তা যাচাইয়ের সময় শেষ হয়েছে। আবার চেষ্টা করুন।';
-        resetRecaptcha();
-      }
-    });
-
-    await recaptcha.render();
-
-    message.textContent = 'আপনার নম্বরে OTP পাঠানো হচ্ছে...';
-
-    confirmation = await signInWithPhoneNumber(auth, phone, recaptcha);
-
-    $('#otpArea').hidden = false;
-    $('#otp').value = '';
-    $('#otp').focus();
-
-    message.textContent = 'OTP পাঠানো হয়েছে। SMS থেকে ৬ সংখ্যার কোড লিখুন।';
-
-  } catch (error) {
-    console.error('OTP SEND ERROR:', error);
-
-    const errors = {
-      'auth/invalid-phone-number': 'মোবাইল নম্বর সঠিক নয়।',
-      'auth/too-many-requests': 'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।',
-      'auth/quota-exceeded': 'Firebase-এর SMS সীমা শেষ হয়েছে।',
-      'auth/captcha-check-failed': 'নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
-      'auth/unauthorized-domain': 'এই ওয়েবসাইট Firebase-এ অনুমোদিত নয়।',
-      'auth/operation-not-allowed': 'Firebase-এ Phone Authentication চালু নেই।',
-      'auth/network-request-failed': 'ইন্টারনেট সংযোগ পরীক্ষা করুন।',
-      'auth/billing-not-enabled': 'Firebase-এর প্রয়োজনীয় বিলিং সেটিংস চালু নেই।'
-    };
-
-    message.textContent =
-      errors[error.code] ||
-      'OTP পাঠানো যায়নি: ' + (error.message || 'অজানা সমস্যা');
-
-    confirmation = null;
-    resetRecaptcha();
-
-  } finally {
-    button.disabled = false;
-    $('#resendOtp').disabled = false;
   }
 }
 
 async function verifyOtp() {
-  const button = $('#verifyOtp');
   const message = $('#message');
+  const button = $('#verifyOtp');
+
+  const email = $('#email').value.trim();
+
+  if (!email) {
+    message.textContent = 'পাসওয়ার্ড রিসেট করতে ইমেইল লিখুন।';
+    return;
+  }
+
+  button.disabled = true;
+  message.textContent = 'পাসওয়ার্ড রিসেটের ইমেইল পাঠানো হচ্ছে...';
 
   try {
-    const code = $('#otp').value.trim();
-
-    if (!confirmation) {
-      throw new Error('আগে OTP পাঠান।');
-    }
-
-    if (!/^\d{6}$/.test(code)) {
-      throw new Error('সঠিক ৬ সংখ্যার OTP লিখুন।');
-    }
-
-    button.disabled = true;
-    message.textContent = 'OTP যাচাই করা হচ্ছে...';
-
-    await confirmation.confirm(code);
-
-    message.textContent = 'লগইন সফল হয়েছে।';
-
+    await sendPasswordResetEmail(auth, email);
+    message.textContent =
+      'পাসওয়ার্ড রিসেটের লিংক আপনার ইমেইলে পাঠানো হয়েছে।';
   } catch (error) {
-    console.error('OTP VERIFY ERROR:', error);
+    console.error('PASSWORD RESET ERROR:', error);
 
     const errors = {
-      'auth/invalid-verification-code': 'OTP কোড ভুল হয়েছে। আবার লিখুন।',
-      'auth/code-expired': 'OTP-এর মেয়াদ শেষ হয়েছে। নতুন OTP নিন।',
-      'auth/session-expired': 'লগইন সেশন শেষ হয়েছে। নতুন OTP নিন।',
-      'auth/too-many-requests': 'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।'
+      'auth/invalid-email': 'সঠিক ইমেইল লিখুন।',
+      'auth/user-not-found': 'এই ইমেইলে কোনো অ্যাকাউন্ট নেই।',
+      'auth/network-request-failed': 'ইন্টারনেট সংযোগ পরীক্ষা করুন।'
     };
 
     message.textContent =
-      errors[error.code] || error.message || 'OTP যাচাই করা যায়নি।';
-
+      errors[error.code] ||
+      error.message ||
+      'রিসেট ইমেইল পাঠানো যায়নি।';
   } finally {
     button.disabled = false;
   }
