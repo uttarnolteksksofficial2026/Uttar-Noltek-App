@@ -358,7 +358,7 @@ async function verifyOtp() {
 
 
 async function loadUser(user) {
-  currentUser = user;
+  currentUser = user;alert('আপনার UID: ' + user.uid);
 
   const ref = doc(db, 'users', user.uid);
   let snap = await getDoc(ref);
