@@ -10,26 +10,18 @@ import {
 } from 'firebase/auth';
 
 import {
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  limit,
-  addDoc,
-  serverTimestamp,
-  updateDoc
+  doc, getDoc, setDoc, collection, query, where,
+  getDocs, orderBy, limit, addDoc, serverTimestamp,
+  updateDoc, deleteDoc
 } from 'firebase/firestore';
 
-const $ = (s) => document.querySelector(s);
+const $ = s => document.querySelector(s);
 
 let confirmation = null;
 let recaptcha = null;
 let currentUser = null;
 let profile = null;
+let editingTermId = null;
 
 const app = $('#app');
 const LOGO_URL = '/logo.png';
@@ -52,12 +44,9 @@ function escapeHTML(value = '') {
 
 function logoHTML() {
   return `
-    <img
-      class="brandmark"
-      src="${LOGO_URL}"
-      alt="উত্তর নলটেক সমাজ কল্যাণ সংগঠনের লোগো"
-      onerror="this.outerHTML='<div class=&quot;brandmark&quot;>উ</div>'"
-    >
+    <img class="brandmark" src="${LOGO_URL}"
+      alt="সংগঠনের লোগো"
+      onerror="this.outerHTML='<div class=&quot;brandmark&quot;>উ</div>'">
   `;
 }
 
@@ -83,30 +72,48 @@ function footer() {
 
 function baseHeader() {
   return `
-    <header>
+    <header class="app-header">
       ${logoHTML()}
       <div class="brand-title">
         <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
         <small>একতাই শক্তি · Unity is Strength</small>
       </div>
+      <button class="menu-toggle" id="menuToggle"
+        type="button" aria-label="মেনু খুলুন">☰</button>
       <button class="ghost" id="logout">লগআউট</button>
     </header>
   `;
 }
 
+function menuDrawer(items) {
+  return `
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <aside class="side-drawer" id="sideDrawer">
+      <div class="drawer-heading">
+        <b>☰ মেনু</b>
+        <button id="closeDrawer" type="button">✕</button>
+      </div>
+      ${items.map(item => `
+        <button class="drawer-link"
+          type="button" data-page-link="${item.id}">
+          <span>${item.icon}</span>
+          ${item.label}
+        </button>
+      `).join('')}
+      <div class="drawer-email">${contact.email}</div>
+    </aside>
+  `;
+}
+
 function bindLogout() {
   const button = $('#logout');
-  if (button) {
-    button.onclick = async () => {
-      await signOut(auth);
-    };
-  }
+  if (button) button.onclick = () => signOut(auth);
 }
 
 function contactHTML() {
   return `
     <section class="panel">
-      <h2>যোগাযোগ</h2>
+      <h2 class="heading-blue">যোগাযোগ</h2>
       <p>মোবাইল:
         <a href="tel:${contact.phone}">${contact.phone}</a>
       </p>
@@ -140,47 +147,27 @@ function loginView() {
       <section class="hero">
         <div class="eyebrow">WELCOME</div>
         <h1>স্বাগতম</h1>
-        <p>
-          উত্তর নলটেক সমাজ কল্যাণ সংগঠনের
-          সদস্য প্ল্যাটফর্মে আপনাকে স্বাগতম।
-        </p>
+        <p>উত্তর নলটেক সমাজ কল্যাণ সংগঠনের সদস্য প্ল্যাটফর্মে আপনাকে স্বাগতম।</p>
       </section>
 
       <section class="panel">
-        <h2>সদস্য লগইন</h2>
-
+        <h2 class="heading-blue">সদস্য লগইন</h2>
         <label>মোবাইল নম্বর</label>
-        <input
-          id="phone"
-          type="tel"
-          placeholder="01XXXXXXXXX অথবা 05XXXXXXXX"
-        />
-
+        <input id="phone" type="tel"
+          placeholder="01XXXXXXXXX অথবা 05XXXXXXXX">
         <div id="recaptcha-container"></div>
-
-        <button class="primary" id="sendOtp">
-          OTP পাঠান
-        </button>
+        <button class="primary" id="sendOtp">OTP পাঠান</button>
 
         <div id="otpArea" hidden>
           <label>OTP কোড</label>
-          <input
-            id="otp"
-            inputmode="numeric"
-            maxlength="6"
-            placeholder="৬ সংখ্যার কোড"
-          />
-          <button class="primary" id="verifyOtp">
-            যাচাই করুন
-          </button>
+          <input id="otp" inputmode="numeric"
+            maxlength="6" placeholder="৬ সংখ্যার কোড">
+          <button class="primary" id="verifyOtp">যাচাই করুন</button>
         </div>
-
         <p class="hint" id="message"></p>
       </section>
-
       ${contactHTML()}
     </main>
-
     ${footer()}
   `;
 
@@ -194,26 +181,17 @@ async function sendOtp() {
 
   try {
     const phone = formatPhone($('#phone').value.trim());
-
     button.disabled = true;
     message.textContent = 'OTP পাঠানো হচ্ছে...';
 
     if (!recaptcha) {
       recaptcha = new RecaptchaVerifier(
-        auth,
-        'recaptcha-container',
-        { size: 'normal' }
+        auth, 'recaptcha-container', { size: 'normal' }
       );
-
       await recaptcha.render();
     }
 
-    confirmation = await signInWithPhoneNumber(
-      auth,
-      phone,
-      recaptcha
-    );
-
+    confirmation = await signInWithPhoneNumber(auth, phone, recaptcha);
     $('#otpArea').hidden = false;
     message.textContent = 'OTP পাঠানো হয়েছে। কোড লিখুন।';
 
@@ -237,14 +215,13 @@ async function verifyOtp() {
 
   } catch (error) {
     console.error(error);
-    $('#message').textContent =
-      'OTP সঠিক নয় অথবা মেয়াদ শেষ হয়েছে।';
+    $('#message').textContent = 'OTP সঠিক নয় অথবা মেয়াদ শেষ হয়েছে।';
     $('#verifyOtp').disabled = false;
   }
 }
 
 /* =========================
-   USER AUTHENTICATION
+   AUTHENTICATION
 ========================= */
 
 async function loadUser(user) {
@@ -266,27 +243,15 @@ async function loadUser(user) {
       status: 'pending',
       role: 'member'
     };
-
   } else {
     profile = snap.data();
   }
 
-  if (profile.status === 'pending') {
-    return pendingView();
-  }
+  if (profile.status === 'pending') return pendingView();
+  if (profile.status === 'rejected') return rejectedView();
+  if (profile.status !== 'approved') return pendingView();
 
-  if (profile.status === 'rejected') {
-    return rejectedView();
-  }
-
-  if (profile.status !== 'approved') {
-    return pendingView();
-  }
-
-  if (profile.role === 'admin') {
-    return adminView();
-  }
-
+  if (profile.role === 'admin') return adminView();
   return memberView();
 }
 
@@ -294,17 +259,13 @@ function pendingView() {
   app.innerHTML = baseHeader() + `
     <main>
       <section class="panel center">
-        <h2>আবেদন জমা হয়েছে</h2>
-        <p>
-          আপনার সদস্য আবেদন অ্যাডমিনের অনুমোদনের
-          অপেক্ষায় রয়েছে।
-        </p>
+        <h2 class="heading-orange">আবেদন জমা হয়েছে</h2>
+        <p>আপনার সদস্য আবেদন অ্যাডমিনের অনুমোদনের অপেক্ষায় রয়েছে।</p>
         <span class="status">অনুমোদনের অপেক্ষায়</span>
       </section>
     </main>
     ${footer()}
   `;
-
   bindLogout();
 }
 
@@ -312,37 +273,26 @@ function rejectedView() {
   app.innerHTML = baseHeader() + `
     <main>
       <section class="panel center">
-        <h2>আবেদন অনুমোদিত হয়নি</h2>
-        <p>
-          বিস্তারিত জানতে সংগঠনের অ্যাডমিনের
-          সঙ্গে যোগাযোগ করুন।
-        </p>
+        <h2 class="heading-red">আবেদন অনুমোদিত হয়নি</h2>
+        <p>বিস্তারিত জানতে সংগঠনের অ্যাডমিনের সঙ্গে যোগাযোগ করুন।</p>
       </section>
       ${contactHTML()}
     </main>
     ${footer()}
   `;
-
   bindLogout();
 }
 
 /* =========================
-   COMMON FUNCTIONS
+   COMMON
 ========================= */
 
 async function getList(name, filters = []) {
   let q = collection(db, name);
-
-  if (filters.length) {
-    q = query(q, ...filters);
-  }
+  if (filters.length) q = query(q, ...filters);
 
   const snap = await getDocs(q);
-
-  return snap.docs.map(d => ({
-    id: d.id,
-    ...d.data()
-  }));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 function money(amount) {
@@ -352,44 +302,55 @@ function money(amount) {
 function setupNavigation() {
   const navButtons = document.querySelectorAll('[data-page-link]');
 
+  function openPage(page) {
+    document.querySelectorAll('[data-page]').forEach(section => {
+      section.hidden = section.dataset.page !== page;
+    });
+
+    navButtons.forEach(button => {
+      button.classList.toggle('active', button.dataset.pageLink === page);
+    });
+
+    $('#sideDrawer')?.classList.remove('open');
+    $('#drawerBackdrop')?.classList.remove('show');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   navButtons.forEach(button => {
-    button.onclick = () => {
-      const page = button.dataset.pageLink;
-
-      document.querySelectorAll('[data-page]').forEach(section => {
-        section.hidden = section.dataset.page !== page;
-      });
-
-      navButtons.forEach(item => {
-        item.classList.toggle(
-          'active',
-          item.dataset.pageLink === page
-        );
-      });
-
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    };
+    button.onclick = () => openPage(button.dataset.pageLink);
   });
 
-  const firstButton = navButtons[0];
+  const toggle = $('#menuToggle');
+  const drawer = $('#sideDrawer');
+  const backdrop = $('#drawerBackdrop');
+  const close = $('#closeDrawer');
 
-  if (firstButton) {
-    firstButton.click();
+  function closeMenu() {
+    drawer?.classList.remove('open');
+    backdrop?.classList.remove('show');
   }
+
+  if (toggle) {
+    toggle.onclick = () => {
+      drawer?.classList.toggle('open');
+      backdrop?.classList.toggle('show');
+    };
+  }
+
+  if (close) close.onclick = closeMenu;
+  if (backdrop) backdrop.onclick = closeMenu;
+
+  const first = document.querySelector('.bottom-nav [data-page-link]');
+  if (first) openPage(first.dataset.pageLink);
 }
 
 function bottomNavigation(items) {
   return `
     <nav class="bottom-nav">
       ${items.map((item, index) => `
-        <button
-          class="nav-item ${index === 0 ? 'active' : ''}"
-          data-page-link="${item.id}"
-          type="button"
-        >
+        <button class="nav-item ${index === 0 ? 'active' : ''}"
+          data-page-link="${item.id}" type="button">
           <span class="nav-icon">${item.icon}</span>
           <span>${item.label}</span>
         </button>
@@ -399,60 +360,299 @@ function bottomNavigation(items) {
 }
 
 /* =========================
+   RULES AND REGULATIONS
+========================= */
+
+function defaultRules() {
+  return [
+    {
+      title: '১. সদস্যপদ',
+      body: 'সংগঠনের উদ্দেশ্য ও আদর্শের প্রতি শ্রদ্ধাশীল হতে হবে। সঠিক তথ্য দিয়ে সদস্যপদের আবেদন করতে হবে। অ্যাডমিনের অনুমোদনের পর সদস্যপদ কার্যকর হবে।'
+    },
+    {
+      title: '২. মাসিক চাঁদা',
+      body: 'প্রত্যেক সদস্যকে নির্ধারিত মাসিক চাঁদা প্রদান করতে হবে। সদস্যভেদে মাসিক চাঁদা ১০০ থেকে ৫,০০০ টাকা পর্যন্ত নির্ধারণ করা যাবে। জমা দেওয়ার পর ডিজিটাল রশিদ সংগ্রহ করতে হবে।'
+    },
+    {
+      title: '৩. আর্থিক স্বচ্ছতা',
+      body: 'সংগঠনের সব আয় ও ব্যয়ের হিসাব সংরক্ষণ করতে হবে। সংগঠনের অর্থ ব্যক্তিগত কাজে ব্যবহার করা যাবে না। অনুদান ও চাঁদার হিসাব স্বচ্ছ রাখতে হবে।'
+    },
+    {
+      title: '৪. সদস্যদের দায়িত্ব',
+      body: 'সংগঠনের সভা ও সামাজিক কার্যক্রমে অংশগ্রহণ করতে হবে। অন্য সদস্যদের সঙ্গে সম্মানজনক আচরণ করতে হবে এবং সংগঠনের সুনাম রক্ষা করতে হবে।'
+    },
+    {
+      title: '৫. সভা ও সিদ্ধান্ত',
+      body: 'সংগঠনের সভায় গৃহীত সিদ্ধান্ত মেনে চলতে হবে। গুরুত্বপূর্ণ সিদ্ধান্ত সংগঠনের অনুমোদিত কর্তৃপক্ষের মাধ্যমে গ্রহণ করতে হবে।'
+    },
+    {
+      title: '৬. শৃঙ্খলা',
+      body: 'প্রতারণা, অসদাচরণ ও আর্থিক অনিয়ম গ্রহণযোগ্য হবে না। অভিযোগের ক্ষেত্রে সংশ্লিষ্ট সদস্যকে আত্মপক্ষ সমর্থনের সুযোগ দিয়ে কর্তৃপক্ষ সিদ্ধান্ত নেবে।'
+    },
+    {
+      title: '৭. সদস্যপদ স্থগিত বা বাতিল',
+      body: 'গুরুতর নিয়মভঙ্গের ক্ষেত্রে তদন্ত ও আত্মপক্ষ সমর্থনের সুযোগ দেওয়ার পর কর্তৃপক্ষ প্রয়োজনীয় ব্যবস্থা নিতে পারবে।'
+    },
+    {
+      title: '৮. চূড়ান্ত বিধান',
+      body: 'সংগঠনের কল্যাণে প্রয়োজন হলে কর্তৃপক্ষ নিয়মাবলি সংশোধন করতে পারবে। সংশোধিত নিয়ম সদস্যদের জানাতে হবে।'
+    }
+  ];
+}
+
+function renderRules(rules) {
+  if (!rules.length) rules = defaultRules();
+
+  return rules.map((r, i) => `
+    <article class="noticeitem rule-card">
+      <h3 class="rule-title">${escapeHTML(r.title)}</h3>
+      <p>${escapeHTML(r.body)}</p>
+    </article>
+  `).join('');
+}
+
+async function loadMemberRules() {
+  const box = $('#memberRules');
+  if (!box) return;
+
+  try {
+    const rules = await getList('rules');
+    box.innerHTML = renderRules(rules);
+  } catch (error) {
+    console.error(error);
+    box.innerHTML = renderRules(defaultRules());
+  }
+}
+
+/* =========================
+   DIGITAL RECEIPT
+========================= */
+
+function receiptNumber(payment) {
+  return payment.receiptNo ||
+    ('UNSKS-' + payment.id.slice(-10).toUpperCase());
+}
+
+function receiptDate(payment) {
+  if (payment.createdAt?.toDate) {
+    return payment.createdAt.toDate().toLocaleDateString('bn-BD');
+  }
+  return 'তারিখ সংরক্ষিত নেই';
+}
+
+function openReceipt(payment) {
+  const number = receiptNumber(payment);
+  const memberName = profile?.name || profile?.fullName ||
+    profile?.phone || currentUser?.phoneNumber || '';
+
+  const receiptWindow = window.open('', '_blank');
+
+  if (!receiptWindow) {
+    alert('রশিদ খুলতে সমস্যা হয়েছে। ব্রাউজারে পপ-আপ অনুমতি দিন।');
+    return;
+  }
+
+  const html = `
+    <!doctype html>
+    <html lang="bn">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>ডিজিটাল রশিদ ${escapeHTML(number)}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background: #f2f6f4;
+          padding: 20px;
+          color: #18352d;
+        }
+        .receipt {
+          max-width: 520px;
+          margin: 20px auto;
+          background: white;
+          padding: 28px;
+          border: 2px solid #16805d;
+          border-radius: 16px;
+        }
+        .logo {
+          width: 90px;
+          height: 90px;
+          object-fit: contain;
+          display: block;
+          margin: auto;
+        }
+        h1 { text-align: center; color: #087653; font-size: 22px; }
+        h2 { text-align: center; color: #d13d35; }
+        .email { text-align: center; font-size: 13px; }
+        .line {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 11px 0;
+          border-bottom: 1px solid #ddd;
+        }
+        .amount {
+          font-size: 25px;
+          font-weight: bold;
+          color: #087653;
+          text-align: center;
+          padding: 20px;
+        }
+        .paid {
+          text-align: center;
+          color: #087653;
+          font-weight: bold;
+          border: 1px solid #087653;
+          padding: 9px;
+          border-radius: 8px;
+        }
+        button {
+          display: block;
+          margin: 20px auto 0;
+          padding: 12px 24px;
+          background: #087653;
+          color: white;
+          border: 0;
+          border-radius: 8px;
+          font-size: 16px;
+        }
+        @media print {
+          body { background: white; padding: 0; }
+          .receipt { border: 1px solid #16805d; margin: 0 auto; }
+          button { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="receipt">
+        <img class="logo" src="${LOGO_URL}" alt="সংগঠনের লোগো">
+        <h1>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</h1>
+        <div class="email">${contact.email}</div>
+        <h2>টাকা জমার রশিদ</h2>
+
+        <div class="line">
+          <span>রশিদ নম্বর</span>
+          <b>${escapeHTML(number)}</b>
+        </div>
+        <div class="line">
+          <span>সদস্যের নাম</span>
+          <b>${escapeHTML(memberName)}</b>
+        </div>
+        <div class="line">
+          <span>সদস্য আইডি</span>
+          <b>${escapeHTML(currentUser.uid.slice(0, 10).toUpperCase())}</b>
+        </div>
+        <div class="line">
+          <span>চাঁদার মাস</span>
+          <b>${escapeHTML(payment.month || '')}</b>
+        </div>
+        <div class="line">
+          <span>জমার তারিখ</span>
+          <b>${escapeHTML(receiptDate(payment))}</b>
+        </div>
+        <div class="line">
+          <span>জমার মাধ্যম</span>
+          <b>${escapeHTML(payment.method || 'নগদ')}</b>
+        </div>
+
+        <div class="amount">${money(payment.amount)}</div>
+        <div class="paid">পরিশোধ সম্পন্ন</div>
+        <p style="text-align:center;font-size:12px">
+          এটি সংগঠনের সংরক্ষিত ডিজিটাল রশিদ।
+        </p>
+        <button onclick="window.print()">রশিদ প্রিন্ট / PDF</button>
+      </div>
+    </body>
+    </html>
+  `;
+
+  receiptWindow.document.open();
+  receiptWindow.document.write(html);
+  receiptWindow.document.close();
+}
+
+function renderPayments(payments) {
+  if (!payments.length) return 'এখনো কোনো জমার তথ্য নেই।';
+
+  return payments.map(p => `
+    <div class="noticeitem">
+      <b>${escapeHTML(p.month || '')}</b>
+      <p>জমা: ${money(p.amount)}</p>
+      <p>মাধ্যম: ${escapeHTML(p.method || 'নগদ')}</p>
+      <p>রশিদ: ${escapeHTML(receiptNumber(p))}</p>
+      <button class="primary" type="button"
+        data-receipt="${escapeHTML(p.id)}">
+        রশিদ দেখুন
+      </button>
+    </div>
+  `).join('');
+}
+
+/* =========================
    MEMBER DASHBOARD
 ========================= */
 
 async function memberView() {
-  app.innerHTML = baseHeader() + `
+  const menuItems = [
+    { id: 'home', icon: '⌂', label: 'হোম' },
+    { id: 'dues', icon: '৳', label: 'আমার চাঁদা ও রশিদ' },
+    { id: 'notices', icon: '▤', label: 'নোটিশ' },
+    { id: 'activities', icon: '☆', label: 'কার্যক্রম' },
+    { id: 'rules', icon: '📜', label: 'নিয়ম-কানুন' },
+    { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
+  ];
+
+  app.innerHTML = baseHeader() + menuDrawer(menuItems) + `
     <main class="app-main">
 
       <div data-page="home">
         <section class="hero">
           <div class="eyebrow">MEMBER DASHBOARD</div>
           <h1>স্বাগতম</h1>
-          <p>
-            ${escapeHTML(profile.phone || currentUser.phoneNumber)}
-          </p>
+          <p>${escapeHTML(profile.phone || currentUser.phoneNumber)}</p>
           <span class="status">অনুমোদিত সদস্য</span>
         </section>
 
         <section class="panel">
-          <h2>সদস্য পরিচিতি</h2>
-          <p>
-            সদস্য আইডি:
+          <h2 class="heading-blue">সদস্য পরিচিতি</h2>
+          <p>সদস্য আইডি:
             ${escapeHTML(currentUser.uid.slice(0, 10).toUpperCase())}
           </p>
-          <p>
-            মোবাইল:
-            ${escapeHTML(profile.phone || '')}
-          </p>
+          <p>মোবাইল: ${escapeHTML(profile.phone || '')}</p>
           <p>অবস্থা: অনুমোদিত</p>
         </section>
       </div>
 
       <div data-page="dues" hidden>
         <section class="panel">
-          <h2>আমার চাঁদা</h2>
+          <h2 class="heading-green">আমার চাঁদা</h2>
           <div id="myDues">লোড হচ্ছে...</div>
         </section>
-
         <section class="panel">
-          <h2>আমার জমার ইতিহাস</h2>
+          <h2 class="heading-blue">আমার জমার ইতিহাস ও ডিজিটাল রশিদ</h2>
           <div id="myPayments">লোড হচ্ছে...</div>
         </section>
       </div>
 
       <div data-page="notices" hidden>
         <section class="panel">
-          <h2>নোটিশ ও ঘোষণা</h2>
+          <h2 class="heading-red">নোটিশ ও ঘোষণা</h2>
           <div id="memberNotices">লোড হচ্ছে...</div>
         </section>
       </div>
 
       <div data-page="activities" hidden>
         <section class="panel">
-          <h2>সংগঠনের কার্যক্রম</h2>
+          <h2 class="heading-purple">সংগঠনের কার্যক্রম</h2>
           <div id="memberActivities">লোড হচ্ছে...</div>
+        </section>
+      </div>
+
+      <div data-page="rules" hidden>
+        <section class="panel">
+          <h2 class="heading-orange">সংগঠনের নিয়ম-কানুন</h2>
+          <p>সংগঠনের সকল সদস্যের জন্য প্রযোজ্য নিয়মাবলি।</p>
+          <div id="memberRules">লোড হচ্ছে...</div>
         </section>
       </div>
 
@@ -469,7 +669,6 @@ async function memberView() {
       { id: 'activities', icon: '☆', label: 'কার্যক্রম' },
       { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
     ])}
-
     ${footer()}
   `;
 
@@ -477,23 +676,14 @@ async function memberView() {
   setupNavigation();
 
   try {
-    const [dues, payments, notices, activities] =
-      await Promise.all([
-        getList('dues', [
-          where('memberUid', '==', currentUser.uid)
-        ]),
-        getList('payments', [
-          where('memberUid', '==', currentUser.uid)
-        ]),
-        getList('notices', [
-          orderBy('createdAt', 'desc'),
-          limit(30)
-        ]),
-        getList('activities', [
-          orderBy('createdAt', 'desc'),
-          limit(30)
-        ])
-      ]);
+    const [dues, payments, notices, activities] = await Promise.all([
+      getList('dues', [where('memberUid', '==', currentUser.uid)]),
+      getList('payments', [
+        where('memberUid', '==', currentUser.uid)
+      ]),
+      getList('notices', [orderBy('createdAt', 'desc'), limit(30)]),
+      getList('activities', [orderBy('createdAt', 'desc'), limit(30)])
+    ]);
 
     $('#myDues').innerHTML = dues.length
       ? dues.map(d => `
@@ -503,20 +693,19 @@ async function memberView() {
         `).join('')
       : 'এখনো কোনো চাঁদা নির্ধারণ করা হয়নি।';
 
-    $('#myPayments').innerHTML = payments.length
-      ? payments.map(p => `
-          <div class="noticeitem">
-            ${escapeHTML(p.month)} —
-            ${money(p.amount)} —
-            ${escapeHTML(p.method || 'নগদ')}
-          </div>
-        `).join('')
-      : 'এখনো কোনো জমার তথ্য নেই।';
+    $('#myPayments').innerHTML = renderPayments(payments);
+
+    document.querySelectorAll('[data-receipt]').forEach(button => {
+      button.onclick = () => {
+        const payment = payments.find(p => p.id === button.dataset.receipt);
+        if (payment) openReceipt(payment);
+      };
+    });
 
     $('#memberNotices').innerHTML = notices.length
       ? notices.map(n => `
           <div class="noticeitem">
-            <b>${escapeHTML(n.title)}</b>
+            <h3>${escapeHTML(n.title)}</h3>
             <p>${escapeHTML(n.body)}</p>
           </div>
         `).join('')
@@ -525,11 +714,13 @@ async function memberView() {
     $('#memberActivities').innerHTML = activities.length
       ? activities.map(a => `
           <div class="noticeitem">
-            <b>${escapeHTML(a.title)}</b>
+            <h3>${escapeHTML(a.title)}</h3>
             <p>${escapeHTML(a.body || '')}</p>
           </div>
         `).join('')
       : 'এখনো কোনো কার্যক্রম প্রকাশিত হয়নি।';
+
+    await loadMemberRules();
 
   } catch (error) {
     console.error(error);
@@ -542,7 +733,16 @@ async function memberView() {
 ========================= */
 
 async function adminView() {
-  app.innerHTML = baseHeader() + `
+  const menuItems = [
+    { id: 'dashboard', icon: '⌂', label: 'ড্যাশবোর্ড' },
+    { id: 'members', icon: '♙', label: 'সদস্য ও আবেদন' },
+    { id: 'finance', icon: '৳', label: 'চাঁদা ও আর্থিক হিসাব' },
+    { id: 'content', icon: '▤', label: 'নোটিশ ও কার্যক্রম' },
+    { id: 'rulesAdmin', icon: '📜', label: 'নিয়ম-কানুন পরিচালনা' },
+    { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
+  ];
+
+  app.innerHTML = baseHeader() + menuDrawer(menuItems) + `
     <main class="app-main">
 
       <div data-page="dashboard">
@@ -553,77 +753,49 @@ async function adminView() {
         </section>
 
         <section class="tiles">
-          <article>
-            <b id="memberCount">০</b>
-            <span>মোট সদস্য</span>
-          </article>
-          <article>
-            <b id="pendingCount">০</b>
-            <span>নতুন আবেদন</span>
-          </article>
-          <article>
-            <b id="donationTotal">৳ ০</b>
-            <span>মোট অনুদান</span>
-          </article>
-          <article>
-            <b id="expenseTotal">৳ ০</b>
-            <span>মোট খরচ</span>
-          </article>
+          <article><b id="memberCount">০</b><span>মোট সদস্য</span></article>
+          <article><b id="pendingCount">০</b><span>নতুন আবেদন</span></article>
+          <article><b id="donationTotal">৳ ০</b><span>মোট অনুদান</span></article>
+          <article><b id="expenseTotal">৳ ০</b><span>মোট খরচ</span></article>
         </section>
 
         <section class="panel">
-          <h2>আর্থিক হিসাবের সংক্ষিপ্ত বিবরণ</h2>
+          <h2 class="heading-blue">আর্থিক হিসাবের সংক্ষিপ্ত বিবরণ</h2>
           <div id="financeReport">লোড হচ্ছে...</div>
         </section>
       </div>
 
       <div data-page="members" hidden>
         <section class="panel">
-          <h2>সদস্য আবেদন</h2>
+          <h2 class="heading-red">সদস্য আবেদন</h2>
           <div id="applicationList">লোড হচ্ছে...</div>
         </section>
-
         <section class="panel">
-          <h2>সদস্য তালিকা</h2>
+          <h2 class="heading-blue">সদস্য তালিকা</h2>
           <div id="memberList">লোড হচ্ছে...</div>
         </section>
       </div>
 
       <div data-page="finance" hidden>
         <section class="panel">
-          <h2>মাসিক চাঁদা নির্ধারণ</h2>
-
+          <h2 class="heading-green">মাসিক চাঁদা নির্ধারণ</h2>
           <label>সদস্য নির্বাচন</label>
           <select id="dueMember"></select>
-
           <label>মাস</label>
-          <input id="dueMonth" type="month" />
-
+          <input id="dueMonth" type="month">
           <label>চাঁদার পরিমাণ (১০০–৫০০০ টাকা)</label>
-          <input
-            id="dueAmount"
-            type="number"
-            min="100"
-            max="5000"
-          />
-
-          <button class="primary" id="saveDue">
-            চাঁদা নির্ধারণ করুন
-          </button>
+          <input id="dueAmount" type="number" min="100" max="5000">
+          <button class="primary" id="saveDue">চাঁদা নির্ধারণ করুন</button>
         </section>
 
         <section class="panel">
-          <h2>চাঁদা জমা গ্রহণ</h2>
-
+          <h2 class="heading-blue">চাঁদা জমা গ্রহণ</h2>
           <label>সদস্য নির্বাচন</label>
           <select id="payMember"></select>
-
           <label>মাস</label>
-          <input id="payMonth" type="month" />
-
+          <input id="payMonth" type="month">
           <label>জমার পরিমাণ</label>
-          <input id="payAmount" type="number" min="1" />
-
+          <input id="payAmount" type="number" min="1">
           <label>জমার মাধ্যম</label>
           <select id="payMethod">
             <option>নগদ</option>
@@ -632,85 +804,78 @@ async function adminView() {
             <option>ব্যাংক</option>
             <option>অন্যান্য</option>
           </select>
-
-          <button class="primary" id="savePayment">
-            জমা সংরক্ষণ করুন
-          </button>
+          <button class="primary" id="savePayment">জমা সংরক্ষণ ও রশিদ তৈরি</button>
         </section>
 
         <section class="panel">
-          <h2>অনুদান যোগ করুন</h2>
-
+          <h2 class="heading-purple">অনুদান যোগ করুন</h2>
           <label>দাতার নাম</label>
-          <input id="donor" placeholder="দাতার নাম" />
-
+          <input id="donor" placeholder="দাতার নাম">
           <label>পরিমাণ</label>
-          <input id="donationAmount" type="number" min="1" />
-
+          <input id="donationAmount" type="number" min="1">
           <label>উদ্দেশ্য</label>
-          <input
-            id="donationPurpose"
-            placeholder="অনুদানের উদ্দেশ্য"
-          />
-
-          <button class="primary" id="saveDonation">
-            অনুদান সংরক্ষণ করুন
-          </button>
+          <input id="donationPurpose" placeholder="অনুদানের উদ্দেশ্য">
+          <button class="primary" id="saveDonation">অনুদান সংরক্ষণ করুন</button>
         </section>
 
         <section class="panel">
-          <h2>খরচ যোগ করুন</h2>
-
+          <h2 class="heading-red">খরচ যোগ করুন</h2>
           <label>খরচের বিবরণ</label>
-          <input
-            id="expensePurpose"
-            placeholder="খরচের বিবরণ"
-          />
-
+          <input id="expensePurpose" placeholder="খরচের বিবরণ">
           <label>পরিমাণ</label>
-          <input id="expenseAmount" type="number" min="1" />
-
+          <input id="expenseAmount" type="number" min="1">
           <label>তারিখ</label>
-          <input id="expenseDate" type="date" />
-
-          <button class="primary" id="saveExpense">
-            খরচ সংরক্ষণ করুন
-          </button>
+          <input id="expenseDate" type="date">
+          <button class="primary" id="saveExpense">খরচ সংরক্ষণ করুন</button>
         </section>
 
         <section class="panel">
-          <h2>আর্থিক হিসাব</h2>
+          <h2 class="heading-blue">আর্থিক হিসাব</h2>
           <div id="financeReport2">লোড হচ্ছে...</div>
         </section>
       </div>
 
       <div data-page="content" hidden>
         <section class="panel">
-          <h2>নোটিশ প্রকাশ</h2>
-
+          <h2 class="heading-red">নোটিশ প্রকাশ</h2>
           <label>নোটিশের শিরোনাম</label>
-          <input id="noticeTitle" />
-
+          <input id="noticeTitle">
           <label>নোটিশের বিবরণ</label>
           <textarea id="noticeBody"></textarea>
+          <button class="primary" id="publishNotice">নোটিশ প্রকাশ করুন</button>
+        </section>
 
-          <button class="primary" id="publishNotice">
-            নোটিশ প্রকাশ করুন
+        <section class="panel">
+          <h2 class="heading-purple">কার্যক্রম যোগ করুন</h2>
+          <label>কার্যক্রমের শিরোনাম</label>
+          <input id="activityTitle">
+          <label>বিবরণ</label>
+          <textarea id="activityBody"></textarea>
+          <button class="primary" id="saveActivity">কার্যক্রম প্রকাশ করুন</button>
+        </section>
+      </div>
+
+      <div data-page="rulesAdmin" hidden>
+        <section class="panel">
+          <h2 class="heading-orange">নিয়ম-কানুন পরিচালনা</h2>
+          <p>নতুন নিয়ম যোগ করুন অথবা পুরোনো নিয়ম সম্পাদনা করুন।</p>
+
+          <label>নিয়মের শিরোনাম</label>
+          <input id="ruleTitle" placeholder="যেমন: ১. সদস্যপদ">
+
+          <label>নিয়মের বিস্তারিত</label>
+          <textarea id="ruleBody" rows="5"
+            placeholder="নিয়মের বিস্তারিত লিখুন"></textarea>
+
+          <button class="primary" id="saveRule">নিয়ম সংরক্ষণ করুন</button>
+          <button class="secondary" id="cancelRuleEdit" hidden>
+            সম্পাদনা বাতিল
           </button>
         </section>
 
         <section class="panel">
-          <h2>কার্যক্রম যোগ করুন</h2>
-
-          <label>কার্যক্রমের শিরোনাম</label>
-          <input id="activityTitle" />
-
-          <label>বিবরণ</label>
-          <textarea id="activityBody"></textarea>
-
-          <button class="primary" id="saveActivity">
-            কার্যক্রম প্রকাশ করুন
-          </button>
+          <h2 class="heading-blue">প্রকাশিত নিয়মাবলি</h2>
+          <div id="adminRules">লোড হচ্ছে...</div>
         </section>
       </div>
 
@@ -727,7 +892,6 @@ async function adminView() {
       { id: 'content', icon: '▤', label: 'প্রকাশনা' },
       { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
     ])}
-
     ${footer()}
   `;
 
@@ -740,6 +904,8 @@ async function adminView() {
   $('#saveExpense').onclick = saveExpense;
   $('#publishNotice').onclick = publishNotice;
   $('#saveActivity').onclick = saveActivity;
+  $('#saveRule').onclick = saveRule;
+  $('#cancelRuleEdit').onclick = cancelRuleEdit;
 
   await refreshAdmin();
 }
@@ -750,28 +916,25 @@ async function adminView() {
 
 async function refreshAdmin() {
   try {
-    const [users, dues, payments, donations, expenses] =
+    const [users, dues, payments, donations, expenses, rules] =
       await Promise.all([
         getList('users'),
         getList('dues'),
         getList('payments'),
         getList('donations'),
-        getList('expenses')
+        getList('expenses'),
+        getList('rules')
       ]);
 
     const members = users.filter(u => u.status === 'approved');
     const pending = users.filter(u => u.status === 'pending');
 
-    $('#memberCount').textContent =
-      members.length.toLocaleString('bn-BD');
-
-    $('#pendingCount').textContent =
-      pending.length.toLocaleString('bn-BD');
+    $('#memberCount').textContent = members.length.toLocaleString('bn-BD');
+    $('#pendingCount').textContent = pending.length.toLocaleString('bn-BD');
 
     const donationSum = donations.reduce(
       (s, x) => s + Number(x.amount || 0), 0
     );
-
     const expenseSum = expenses.reduce(
       (s, x) => s + Number(x.amount || 0), 0
     );
@@ -784,59 +947,46 @@ async function refreshAdmin() {
           <div class="applicant">
             <span>${escapeHTML(u.phone || '')}</span>
             <span>
-              <button data-approve="${escapeHTML(u.id)}">
-                অনুমোদন
-              </button>
-              <button data-reject="${escapeHTML(u.id)}">
-                বাতিল
-              </button>
+              <button data-approve="${escapeHTML(u.id)}">অনুমোদন</button>
+              <button data-reject="${escapeHTML(u.id)}">বাতিল</button>
             </span>
           </div>
         `).join('')
       : 'নতুন আবেদন নেই।';
 
     document.querySelectorAll('[data-approve]').forEach(button => {
-      button.onclick = () =>
-        changeStatus(button.dataset.approve, 'approved');
+      button.onclick = () => changeStatus(button.dataset.approve, 'approved');
     });
 
     document.querySelectorAll('[data-reject]').forEach(button => {
-      button.onclick = () =>
-        changeStatus(button.dataset.reject, 'rejected');
+      button.onclick = () => changeStatus(button.dataset.reject, 'rejected');
     });
 
     $('#memberList').innerHTML = members.length
       ? members.map(u => `
           <div class="noticeitem">
             <b>${escapeHTML(u.phone || '')}</b>
-            <p>
-              সদস্য আইডি:
-              ${escapeHTML(u.id.slice(0, 10).toUpperCase())}
-            </p>
+            <p>সদস্য আইডি: ${escapeHTML(u.id.slice(0, 10).toUpperCase())}</p>
             <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
           </div>
         `).join('')
       : 'কোনো অনুমোদিত সদস্য নেই।';
 
     const options = members.map(u => `
-      <option
-        value="${escapeHTML(u.id)}"
-        data-phone="${escapeHTML(u.phone || '')}"
-      >
+      <option value="${escapeHTML(u.id)}"
+        data-phone="${escapeHTML(u.phone || '')}">
         ${escapeHTML(u.phone || u.id)}
       </option>
     `).join('');
 
     $('#dueMember').innerHTML =
       '<option value="">সদস্য নির্বাচন করুন</option>' + options;
-
     $('#payMember').innerHTML =
       '<option value="">সদস্য নির্বাচন করুন</option>' + options;
 
     const paymentSum = payments.reduce(
       (s, x) => s + Number(x.amount || 0), 0
     );
-
     const dueSum = dues.reduce(
       (s, x) => s + Number(x.amount || 0), 0
     );
@@ -846,14 +996,15 @@ async function refreshAdmin() {
       <p>মোট জমা: <b>${money(paymentSum)}</b></p>
       <p>মোট অনুদান: <b>${money(donationSum)}</b></p>
       <p>মোট খরচ: <b>${money(expenseSum)}</b></p>
-      <p>
-        জমা ও অনুদান থেকে খরচ বাদে:
+      <p>জমা ও অনুদান থেকে খরচ বাদে:
         <b>${money(paymentSum + donationSum - expenseSum)}</b>
       </p>
     `;
 
     $('#financeReport').innerHTML = report;
     $('#financeReport2').innerHTML = report;
+
+    renderAdminRules(rules);
 
   } catch (error) {
     console.error(error);
@@ -864,10 +1015,8 @@ async function refreshAdmin() {
 async function changeStatus(uid, status) {
   try {
     await updateDoc(doc(db, 'users', uid), { status });
-
     alert('সদস্যের অবস্থা পরিবর্তন হয়েছে।');
     await refreshAdmin();
-
   } catch (error) {
     alert('পরিবর্তন করা যায়নি: ' + error.message);
   }
@@ -878,10 +1027,7 @@ function selectedMember(id) {
   const uid = select.value;
   const phone = select.selectedOptions[0]?.dataset.phone || '';
 
-  if (!uid) {
-    throw new Error('সদস্য নির্বাচন করুন।');
-  }
-
+  if (!uid) throw new Error('সদস্য নির্বাচন করুন।');
   return { uid, phone };
 }
 
@@ -896,9 +1042,7 @@ async function saveDue() {
     const amount = Number($('#dueAmount').value);
 
     if (!month || amount < 100 || amount > 5000) {
-      throw new Error(
-        'মাস নির্বাচন করুন এবং ১০০ থেকে ৫০০০ টাকার মধ্যে চাঁদা দিন।'
-      );
+      throw new Error('মাস নির্বাচন করুন এবং ১০০ থেকে ৫০০০ টাকার মধ্যে চাঁদা দিন।');
     }
 
     await addDoc(collection(db, 'dues'), {
@@ -912,7 +1056,6 @@ async function saveDue() {
 
     alert('চাঁদা নির্ধারণ করা হয়েছে।');
     $('#dueAmount').value = '';
-
     await refreshAdmin();
 
   } catch (error) {
@@ -931,7 +1074,7 @@ async function savePayment() {
       throw new Error('মাস ও সঠিক জমার পরিমাণ দিন।');
     }
 
-    await addDoc(collection(db, 'payments'), {
+    const paymentRef = await addDoc(collection(db, 'payments'), {
       memberUid: member.uid,
       memberPhone: member.phone,
       month,
@@ -942,13 +1085,20 @@ async function savePayment() {
       createdBy: currentUser.uid
     });
 
-    alert('জমার তথ্য সংরক্ষণ হয়েছে।');
+    const receiptNo = 'UNSKS-' + paymentRef.id.slice(-10).toUpperCase();
+
+    await updateDoc(paymentRef, {
+      receiptNo
+    });
+
+    alert('জমা সংরক্ষণ হয়েছে। ডিজিটাল রশিদ তৈরি হয়েছে।');
     $('#payAmount').value = '';
 
     await refreshAdmin();
 
   } catch (error) {
-    alert(error.message);
+    console.error(error);
+    alert('জমা সংরক্ষণে সমস্যা হয়েছে: ' + error.message);
   }
 }
 
@@ -967,19 +1117,15 @@ async function saveDonation() {
     }
 
     await addDoc(collection(db, 'donations'), {
-      donor,
-      amount,
-      purpose,
+      donor, amount, purpose,
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
 
     alert('অনুদান সংরক্ষণ হয়েছে।');
-
     $('#donor').value = '';
     $('#donationAmount').value = '';
     $('#donationPurpose').value = '';
-
     await refreshAdmin();
 
   } catch (error) {
@@ -998,19 +1144,15 @@ async function saveExpense() {
     }
 
     await addDoc(collection(db, 'expenses'), {
-      purpose,
-      amount,
-      date,
+      purpose, amount, date,
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
 
     alert('খরচ সংরক্ষণ হয়েছে।');
-
     $('#expensePurpose').value = '';
     $('#expenseAmount').value = '';
     $('#expenseDate').value = '';
-
     await refreshAdmin();
 
   } catch (error) {
@@ -1027,19 +1169,15 @@ async function publishNotice() {
     const title = $('#noticeTitle').value.trim();
     const body = $('#noticeBody').value.trim();
 
-    if (!title || !body) {
-      throw new Error('শিরোনাম ও বিবরণ লিখুন।');
-    }
+    if (!title || !body) throw new Error('শিরোনাম ও বিবরণ লিখুন।');
 
     await addDoc(collection(db, 'notices'), {
-      title,
-      body,
+      title, body,
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
 
     alert('নোটিশ প্রকাশ হয়েছে।');
-
     $('#noticeTitle').value = '';
     $('#noticeBody').value = '';
 
@@ -1053,24 +1191,124 @@ async function saveActivity() {
     const title = $('#activityTitle').value.trim();
     const body = $('#activityBody').value.trim();
 
-    if (!title || !body) {
-      throw new Error('শিরোনাম ও বিবরণ লিখুন।');
-    }
+    if (!title || !body) throw new Error('শিরোনাম ও বিবরণ লিখুন।');
 
     await addDoc(collection(db, 'activities'), {
-      title,
-      body,
+      title, body,
       createdAt: serverTimestamp(),
       createdBy: currentUser.uid
     });
 
     alert('কার্যক্রম প্রকাশ হয়েছে।');
-
     $('#activityTitle').value = '';
     $('#activityBody').value = '';
 
   } catch (error) {
     alert(error.message);
+  }
+}
+
+/* =========================
+   ADMIN RULE MANAGEMENT
+========================= */
+
+function renderAdminRules(rules) {
+  const box = $('#adminRules');
+  if (!box) return;
+
+  box.innerHTML = rules.length
+    ? rules.map(r => `
+        <div class="noticeitem">
+          <h3>${escapeHTML(r.title)}</h3>
+          <p>${escapeHTML(r.body)}</p>
+          <button class="secondary" data-edit-rule="${escapeHTML(r.id)}">
+            সম্পাদনা
+          </button>
+          <button class="danger" data-delete-rule="${escapeHTML(r.id)}">
+            মুছুন
+          </button>
+        </div>
+      `).join('')
+    : '<p>এখনো কোনো নিয়ম সংরক্ষণ করা হয়নি।</p>';
+
+  document.querySelectorAll('[data-edit-rule]').forEach(button => {
+    button.onclick = () => editRule(button.dataset.editRule, rules);
+  });
+
+  document.querySelectorAll('[data-delete-rule]').forEach(button => {
+    button.onclick = () => deleteRule(button.dataset.deleteRule);
+  });
+}
+
+async function saveRule() {
+  try {
+    const title = $('#ruleTitle').value.trim();
+    const body = $('#ruleBody').value.trim();
+
+    if (!title || !body) {
+      throw new Error('নিয়মের শিরোনাম ও বিস্তারিত লিখুন।');
+    }
+
+    if (editingTermId) {
+      await updateDoc(doc(db, 'rules', editingTermId), {
+        title,
+        body,
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUser.uid
+      });
+      alert('নিয়ম সম্পাদনা করা হয়েছে।');
+    } else {
+      await addDoc(collection(db, 'rules'), {
+        title,
+        body,
+        createdAt: serverTimestamp(),
+        createdBy: currentUser.uid
+      });
+      alert('নতুন নিয়ম সংরক্ষণ হয়েছে।');
+    }
+
+    cancelRuleEdit();
+    const rules = await getList('rules');
+    renderAdminRules(rules);
+
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function editRule(id, rules) {
+  const rule = rules.find(r => r.id === id);
+  if (!rule) return;
+
+  editingTermId = id;
+  $('#ruleTitle').value = rule.title || '';
+  $('#ruleBody').value = rule.body || '';
+  $('#saveRule').textContent = 'পরিবর্তন সংরক্ষণ করুন';
+  $('#cancelRuleEdit').hidden = false;
+
+  document.querySelector('[data-page-link="rulesAdmin"]')?.click();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelRuleEdit() {
+  editingTermId = null;
+  $('#ruleTitle').value = '';
+  $('#ruleBody').value = '';
+  $('#saveRule').textContent = 'নিয়ম সংরক্ষণ করুন';
+  $('#cancelRuleEdit').hidden = true;
+}
+
+async function deleteRule(id) {
+  if (!confirm('আপনি কি এই নিয়মটি মুছে ফেলতে চান?')) return;
+
+  try {
+    await deleteDoc(doc(db, 'rules', id));
+    alert('নিয়ম মুছে ফেলা হয়েছে।');
+    const rules = await getList('rules');
+    renderAdminRules(rules);
+
+  } catch (error) {
+    alert('নিয়ম মুছতে সমস্যা হয়েছে: ' + error.message);
   }
 }
 
@@ -1096,22 +1334,15 @@ onAuthStateChanged(auth, async user => {
     app.innerHTML = `
       <main>
         <section class="panel">
-          <h2>তথ্য লোড করা যায়নি</h2>
+          <h2 class="heading-red">তথ্য লোড করা যায়নি</h2>
           <p>${escapeHTML(error.message)}</p>
-          <button class="secondary" id="tryAgain">
-            আবার চেষ্টা করুন
-          </button>
-          <button class="ghost" id="errorLogout">
-            লগআউট
-          </button>
+          <button class="secondary" id="tryAgain">আবার চেষ্টা করুন</button>
+          <button class="ghost" id="errorLogout">লগআউট</button>
         </section>
       </main>
     `;
 
     $('#tryAgain').onclick = () => loadUser(user);
-
-    $('#errorLogout').onclick = async () => {
-      await signOut(auth);
-    };
+    $('#errorLogout').onclick = () => signOut(auth);
   }
 });
