@@ -1223,3 +1223,37 @@ footer { color: #7b8d82; }
 .app-main .hero .eyebrow {
   color: #f0d38d;
 }
+/* Clear, readable text fix */
+body,
+.app-main,
+.app-main .panel,
+.app-main .panel p,
+.app-main label,
+.app-main .hint {
+  color: #173b32 !important;
+  opacity: 1 !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.app-main .hero,
+.app-main .hero *,
+.app-main .hero h1,
+.app-main .hero p {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.app-main .hero .eyebrow {
+  color: #ffe6a5 !important;
+}
+
+.brand-title b {
+  color: #086b4d !important;
+}
+
+.brand-title small {
+  color: #496357 !important;
+}
