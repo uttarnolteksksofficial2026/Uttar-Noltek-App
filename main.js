@@ -2151,12 +2151,13 @@ async function adminView() {
   const menuItems = [
     { id: 'dashboard', icon: '⌂', label: 'ড্যাশবোর্ড' },
     { id: 'members', icon: '♙', label: 'সদস্য ও আবেদন' },
+    { id: 'idcards', icon: '🪪', label: 'সদস্য আইডি কার্ড' },
     { id: 'finance', icon: '🤲', label: 'চাঁদা ও আর্থিক হিসাব' },
     { id: 'content', icon: '▤', label: 'নোটিশ ও কার্যক্রম' },
     { id: 'rulesAdmin', icon: '📜', label: 'নিয়ম-কানুন পরিচালনা' },
     { id: 'constitutionAdmin', icon: '📖', label: 'গঠনতন্ত্র পরিচালনা' },
     { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
-  ];{ id: 'idcards', icon: '🪪', label: 'সদস্য আইডি কার্ড' },
+  ];
 
   app.innerHTML = baseHeader() + menuDrawer(menuItems) + `
     <main class="app-main">
