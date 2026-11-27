@@ -1501,7 +1501,6 @@ async function loadPrayerTimes(lat, lon) {
   <p>🌇 মাগরিব: ${format12Hour(times.Maghrib)}</p>
   <p>🌙 এশা: ${format12Hour(times.Isha)}</p>
 `;
-
 iftarTime.textContent =
   '🌙 আজকের ইফতারের সময়: ' + format12Hour(times.Maghrib);
     
