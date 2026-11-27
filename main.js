@@ -2175,11 +2175,12 @@ async function memberView() {
 
   $('#detectLocation').onclick = detectPrayerLocation;
 
-const cardPage = document.querySelector('[data-page="idcards"]');
-const cardContainer = document.getElementById('memberIdCard');
-
-if (cardPage && cardContainer) {
-  setupMemberIdCard();
+try {
+  await setupMemberIdCard();
+} catch (error) {
+  console.error('MEMBER ID CARD ERROR:', error);
+  $('#memberIdCard').innerHTML =
+    '<p>আইডি কার্ড লোড করা যায়নি।</p>';
 }
 
 /* ADMIN DASHBOARD */
