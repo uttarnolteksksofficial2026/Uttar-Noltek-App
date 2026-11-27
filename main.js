@@ -412,14 +412,15 @@ async function verifyOtp() {
 
 /* AUTH */
 
+
 async function loadUser(user) {
   currentUser = user;
 
   try {
     const ref = doc(db, 'users', user.uid);
     const snap = await getDocFromServer(ref);
-  
-      if (!snap.exists()) {
+
+    if (!snap.exists()) {
       await setDoc(ref, {
         email: user.email || '',
         phone: user.phoneNumber || '',
@@ -437,6 +438,13 @@ async function loadUser(user) {
       profile = snap.data();
     }
 
+    // নিষ্ক্রিয় সদস্যের প্রবেশ বন্ধ
+    if (profile.status === 'inactive') {
+      await signOut(auth);
+      alert('আপনার সদস্য অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে।');
+      return loginView();
+    }
+
     if (profile.status === 'pending') return pendingView();
     if (profile.status === 'rejected') return rejectedView();
     if (profile.status !== 'approved') return pendingView();
@@ -452,7 +460,6 @@ async function loadUser(user) {
         <h2>তথ্য লোড করা যায়নি</h2>
         <p>${error.message}</p>
         <button onclick="location.reload()">আবার চেষ্টা করুন</button>
-        <button onclick="location.reload()">লগইন পেজে ফিরুন</button>
       </main>
     `;
   }
