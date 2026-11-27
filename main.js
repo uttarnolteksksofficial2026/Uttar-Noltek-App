@@ -1166,6 +1166,7 @@ function renderPayments(payments) {
 }
 
 /* MEMBER DASHBOARD */
+
 function setupMemberIdCard() {
   const homePage = document.querySelector('[data-page="home"]');
 
@@ -1804,9 +1805,10 @@ uploadButton.onclick = async () => {
 
   } catch (error) {
     console.error(error);
-    alert('তথ্য লোড করতে সমস্যা হয়েছে।');
+    alert('তথ্য লোড করতে সমস্যা হয়েছে।'); 
   }
-}
+  setupMemberIdCard();
+  }
 
 /* ADMIN DASHBOARD */
 
