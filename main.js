@@ -257,6 +257,9 @@ function loginView() {
         text-align: center;
         margin-top: 55px;
       }
+      .welcome-content h1 {
+  color: #FFD700;
+}
 
       .welcome-content .welcome-eyebrow {
         font-size: 14px;
