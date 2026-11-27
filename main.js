@@ -225,58 +225,197 @@ function contactHTML() {
    
 function loginView() {
   app.innerHTML = `
-    <header class="app-header">
-      ${logoHTML()}
-      <div class="brand-title">
-        <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
-        <small>একতাই শক্তি · Unity is Strength</small>
-      </div>
-    </header>
+    <style>
+      .welcome-screen {
+        min-height: 100vh;
+        box-sizing: border-box;
+        padding: 30px 22px;
+        display: flex;
+        flex-direction: column;
+        color: white;
+        background: linear-gradient(
+          145deg,
+          #087f5b 0%,
+          #0796a8 48%,
+          #075985 100%
+        );
+      }
 
-    <main class="app-main">
-      <section class="hero">
-        <div class="eyebrow">WELCOME</div>
+      .welcome-logo {
+        text-align: center;
+        margin-top: 25px;
+      }
+
+      .welcome-logo img {
+        width: 125px;
+        height: 125px;
+        object-fit: contain;
+        border-radius: 22px;
+      }
+
+      .welcome-content {
+        text-align: center;
+        margin-top: 55px;
+      }
+
+      .welcome-content .welcome-eyebrow {
+        font-size: 14px;
+        letter-spacing: 4px;
+        font-weight: 700;
+        color: #d1fae5;
+      }
+
+      .welcome-content h1 {
+        font-size: 35px;
+        margin: 12px 0;
+        color: #ffffff;
+      }
+
+      .welcome-content p {
+        font-size: 17px;
+        line-height: 1.9;
+        color: #f0fdfa;
+        max-width: 350px;
+        margin: 0 auto;
+      }
+
+      .welcome-buttons {
+        margin-top: auto;
+        padding-top: 45px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .welcome-buttons button {
+        width: 100%;
+        min-height: 58px;
+        border: none;
+        border-radius: 40px;
+        font-size: 20px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .welcome-login {
+        background: #ffffff;
+        color: #087f5b;
+      }
+
+      .welcome-register {
+        background: #38bdf8;
+        color: #ffffff;
+      }
+
+      .welcome-form {
+        margin-top: 28px;
+        padding: 22px;
+        background: #ffffff;
+        color: #17445b;
+        border-radius: 22px;
+      }
+
+      .welcome-form h2 {
+        color: #087f5b;
+        text-align: center;
+      }
+
+      .welcome-form label {
+        display: block;
+        margin: 14px 0 7px;
+        color: #17445b;
+      }
+
+      .welcome-form input,
+      .welcome-form textarea,
+      .welcome-form select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 13px;
+        border: 1px solid #cbdce8;
+        border-radius: 12px;
+        font-size: 16px;
+        background: #ffffff;
+        color: #173b58;
+      }
+
+      .welcome-form button {
+        width: 100%;
+        min-height: 48px;
+        margin-top: 14px;
+        border-radius: 30px;
+      }
+
+      .welcome-form .primary {
+        background: #087f5b;
+        color: #ffffff;
+        border: none;
+      }
+
+      .welcome-form .secondary {
+        background: #e8f4f8;
+        color: #075985;
+        border: 1px solid #c6e4ef;
+      }
+
+      .welcome-hint {
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      .welcome-back {
+        margin-top: 20px;
+        width: 100%;
+        min-height: 45px;
+        border: 1px solid #ffffff99;
+        border-radius: 30px;
+        color: #ffffff;
+        background: transparent;
+      }
+    </style>
+
+    <main class="welcome-screen">
+      <div class="welcome-logo">
+        ${logoHTML()}
+      </div>
+
+      <section class="welcome-content">
+        <div class="welcome-eyebrow">WELCOME</div>
         <h1>স্বাগতম</h1>
-        <p>উত্তর নলটেক সমাজ কল্যাণ সংগঠনের সদস্য প্ল্যাটফর্মে আপনাকে স্বাগতম।</p>
+        <p>
+          আমাদের উত্তর নলটেক সমাজ কল্যাণ সংগঠনের
+          সদস্য প্ল্যাটফর্মে আপনাকে স্বাগতম।
+        </p>
       </section>
 
-      <div class="purpose-card">
-        <div class="purpose-icon">🌿</div>
-        <h2>আমাদের উদ্দেশ্য</h2>
-        <p>
-          মানবতার সেবা, সামাজিক উন্নয়ন এবং মানুষের কল্যাণে
-          একসাথে কাজ করাই আমাদের প্রধান উদ্দেশ্য।
-          অসহায় ও সুবিধাবঞ্চিত মানুষের পাশে দাঁড়ানো,
-          শিক্ষা ও সচেতনতা বৃদ্ধি, সামাজিক সম্প্রীতি প্রতিষ্ঠা
-          এবং একটি সুন্দর, মানবিক সমাজ গড়ে তুলতে
-          আমরা প্রতিশ্রুতিবদ্ধ।
-        </p>
+      <div class="welcome-buttons" id="welcomeChoices">
+        <button class="welcome-login" id="showLogin" type="button">
+          Log In
+        </button>
+
+        <button class="welcome-register" id="showRegister" type="button">
+          Register
+        </button>
       </div>
 
-      <section class="panel">
-        <h2 class="heading-blue">সদস্য প্রবেশ</h2>
-        <p class="hint">আপনার পছন্দের অপশনটি নির্বাচন করুন।</p>
-
-        <button class="primary" id="showLogin" type="button">
-          লগইন
-        </button>
-
-        <button class="secondary" id="showRegister" type="button">
-          নতুন সদস্য রেজিস্ট্রেশন
-        </button>
-
+      <section class="welcome-form" id="welcomeForm" hidden>
         <div id="authCredentials" hidden>
-          <hr>
-
           <label for="email">Gmail / ইমেইল</label>
-          <input id="email" type="email"
+          <input
+            id="email"
+            type="email"
             autocomplete="email"
-            placeholder="আপনার ইমেইল লিখুন">
+            placeholder="আপনার ইমেইল লিখুন"
+          >
 
           <label for="password">পাসওয়ার্ড</label>
-          <input id="password" type="password"
+          <input
+            id="password"
+            type="password"
             autocomplete="current-password"
-            placeholder="পাসওয়ার্ড লিখুন">
+            placeholder="পাসওয়ার্ড লিখুন"
+          >
         </div>
 
         <div id="loginActions" hidden>
@@ -290,24 +429,30 @@ function loginView() {
         </div>
 
         <div id="registrationFields" hidden>
-          <hr>
-
-          <h2 class="heading-blue">নতুন সদস্য নিবন্ধন</h2>
-          <p class="hint">সদস্য হতে নিচের তথ্যগুলো পূরণ করুন।</p>
+          <h2>নতুন সদস্য নিবন্ধন</h2>
 
           <label for="fullName">পূর্ণ নাম *</label>
-          <input id="fullName" type="text"
+          <input
+            id="fullName"
+            type="text"
             autocomplete="name"
-            placeholder="আপনার সম্পূর্ণ নাম">
+            placeholder="আপনার সম্পূর্ণ নাম"
+          >
 
           <label for="memberPhone">মোবাইল নম্বর *</label>
-          <input id="memberPhone" type="tel"
+          <input
+            id="memberPhone"
+            type="tel"
             autocomplete="tel"
-            placeholder="মোবাইল নম্বর লিখুন">
+            placeholder="মোবাইল নম্বর লিখুন"
+          >
 
           <label for="memberAddress">পূর্ণ ঠিকানা *</label>
-          <textarea id="memberAddress" rows="3"
-            placeholder="গ্রাম, ইউনিয়ন, উপজেলা, জেলা"></textarea>
+          <textarea
+            id="memberAddress"
+            rows="3"
+            placeholder="গ্রাম, ইউনিয়ন, উপজেলা, জেলা"
+          ></textarea>
 
           <label for="bloodGroup">রক্তের গ্রুপ *</label>
           <select id="bloodGroup">
@@ -324,10 +469,13 @@ function loginView() {
           </select>
 
           <label for="memberOccupation">পেশা (ঐচ্ছিক)</label>
-          <input id="memberOccupation" type="text"
-            placeholder="আপনার পেশা">
+          <input
+            id="memberOccupation"
+            type="text"
+            placeholder="আপনার পেশা"
+          >
 
-          <p class="hint">
+          <p class="welcome-hint">
             নিবন্ধনের জন্য Gmail ও পাসওয়ার্ডের ঘরও পূরণ করতে হবে।
           </p>
 
@@ -336,28 +484,28 @@ function loginView() {
           </button>
         </div>
 
-        <button class="secondary" id="backToChoices" type="button" hidden>
-          ফিরে যান
-        </button>
-
-        <p class="hint" id="message" role="status" aria-live="polite"></p>
+        <p class="welcome-hint" id="message" role="status" aria-live="polite"></p>
       </section>
 
-      ${contactHTML()}
+      <button class="welcome-back" id="backToChoices" type="button" hidden>
+        ফিরে যান
+      </button>
     </main>
-
-    ${footer()}
   `;
 
+  const choices = $('#welcomeChoices');
+  const form = $('#welcomeForm');
   const credentials = $('#authCredentials');
   const loginActions = $('#loginActions');
   const registrationFields = $('#registrationFields');
   const backButton = $('#backToChoices');
   const message = $('#message');
 
-  function showChoice(type) {
-    credentials.hidden = false;
+  function openForm(type) {
+    choices.hidden = true;
+    form.hidden = false;
     backButton.hidden = false;
+    credentials.hidden = false;
     message.textContent = '';
 
     if (type === 'login') {
@@ -369,13 +517,12 @@ function loginView() {
     }
   }
 
-  $('#showLogin').onclick = () => showChoice('login');
-  $('#showRegister').onclick = () => showChoice('register');
+  $('#showLogin').onclick = () => openForm('login');
+  $('#showRegister').onclick = () => openForm('register');
 
   backButton.onclick = () => {
-    credentials.hidden = true;
-    loginActions.hidden = true;
-    registrationFields.hidden = true;
+    choices.hidden = false;
+    form.hidden = true;
     backButton.hidden = true;
     message.textContent = '';
   };
@@ -383,7 +530,7 @@ function loginView() {
   $('#sendOtp').onclick = sendOtp;
   $('#registerMember').onclick = registerMember;
   $('#verifyOtp').onclick = verifyOtp;
-}
+}  
              
 async function verifyOtp() {
   const message = $('#message');
