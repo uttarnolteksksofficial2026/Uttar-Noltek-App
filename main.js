@@ -251,27 +251,20 @@ function loginView() {
       }
 
       .village-backdrop {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(0, 145, 125, .18),
-      rgba(0, 80, 75, .25)
-    ),
-    url('/village.jpg') center center / cover no-repeat;
-  opacity: .65;
-  filter: blur(1px);
-  transform: scale(1.02);
-  pointer-events: none;
-}
-    ),
-    url('/village.jpg') center center / cover no-repeat;
-  opacity: .35;
-  filter: blur(3px);
-  transform: scale(1.04);
-  pointer-events: none;
-}
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(
+            to bottom,
+            rgba(0, 145, 125, .18),
+            rgba(0, 80, 75, .25)
+          ),
+          url('/village.jpg') center center / cover no-repeat;
+        opacity: .65;
+        filter: blur(1px);
+        transform: scale(1.02);
+        pointer-events: none;
+      }
 
       .welcome-screen::before {
         content: "";
@@ -550,7 +543,7 @@ function loginView() {
           </button>
         </div>
 
-        <p class="welcome-message" id="message"></p>
+        <p id="message" class="welcome-message"></p>
       </section>
 
       <button class="welcome-back" id="backToChoices" hidden>
