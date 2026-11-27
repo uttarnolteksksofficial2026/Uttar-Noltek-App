@@ -1593,11 +1593,7 @@ function setupMemberIdCard() {
         </div>
       </div>
 
-      <div class="id-org-bottom">
-        উত্তর নলটেক সমাজ কল্যাণ সংগঠন
-      </div>
-
-      <footer class="id-footer">
+        <footer class="id-footer">
         সামাজিক উন্নয়ন, মানবকল্যাণ ও ঐক্যের জন্য আমরা একসাথে
         <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
       </footer>
