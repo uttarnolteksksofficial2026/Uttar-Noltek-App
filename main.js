@@ -1167,6 +1167,149 @@ function renderPayments(payments) {
 
 /* MEMBER DASHBOARD */
 
+function setupMemberIdCard() {
+  const homePage = document.querySelector('[data-page="home"]');
+
+  if (!homePage || !currentUser || !profile) return;
+
+  if (document.querySelector('#memberIdCardPanel')) return;
+
+  const memberId = currentUser.uid.slice(0, 10).toUpperCase();
+
+  const photoURL =
+    typeof profile.photoURL === 'string' &&
+    profile.photoURL.startsWith('https://')
+      ? profile.photoURL
+      : '/logo.png';
+
+  const name = escapeHTML(profile.fullName || 'নাম পাওয়া যায়নি');
+  const phone = escapeHTML(profile.phone || 'তথ্য নেই');
+  const address = escapeHTML(profile.address || 'তথ্য নেই');
+  const bloodGroup = escapeHTML(profile.bloodGroup || 'তথ্য নেই');
+  const occupation = escapeHTML(profile.occupation || 'তথ্য নেই');
+
+  homePage.insertAdjacentHTML('beforeend', `
+    <section class="panel" id="memberIdCardPanel">
+      <h2 class="heading-green">🪪 আমার ডিজিটাল পরিচয়পত্র</h2>
+
+      <div id="digitalMemberCard" style="
+        max-width:390px;
+        margin:15px auto;
+        padding:22px;
+        border:3px solid #c49a38;
+        border-radius:18px;
+        background:linear-gradient(145deg,#064b35,#08734d);
+        color:white;
+        text-align:center;
+        box-shadow:0 5px 18px rgba(0,0,0,.18);
+      ">
+        <img src="/logo.png"
+          alt="সংগঠনের লোগো"
+          style="width:65px;height:65px;object-fit:contain;">
+
+        <h3 style="margin:8px 0;color:#f7d879;">
+          উত্তর নলটেক সমাজ কল্যাণ সংগঠন
+        </h3>
+
+        <p style="margin:5px 0 15px;color:#fff;">
+          ডিজিটাল সদস্য পরিচয়পত্র
+        </p>
+
+        <img src="${escapeHTML(photoURL)}"
+          alt="সদস্যের ছবি"
+          style="
+            width:105px;height:115px;
+            object-fit:cover;
+            border:3px solid #e5c36b;
+            border-radius:12px;
+          ">
+
+        <h2 style="color:#ffe39a;margin:12px 0 5px;">
+          ${name}
+        </h2>
+
+        <p>সদস্য আইডি: ${escapeHTML(memberId)}</p>
+
+        <div style="
+          text-align:left;
+          background:rgba(255,255,255,.10);
+          padding:12px;
+          border-radius:10px;
+          line-height:1.8;
+        ">
+          <p>মোবাইল: ${phone}</p>
+          <p>ঠিকানা: ${address}</p>
+          <p>রক্তের গ্রুপ: ${bloodGroup}</p>
+          <p>পেশা: ${occupation}</p>
+          <p>সদস্যপদ: অনুমোদিত</p>
+        </div>
+
+        <p style="
+          color:#f7d879;
+          margin:15px 0 0;
+          font-size:12px;
+        ">
+          এই পরিচয়পত্র সংগঠনের ডিজিটাল সদস্য পরিচয়ের জন্য
+        </p>
+      </div>
+
+      <button type="button" class="primary"
+        id="downloadMemberCard"
+        style="width:100%;margin-top:12px;">
+        📄 পরিচয়পত্র PDF ডাউনলোড
+      </button>
+    </section>
+  `);
+
+  $('#downloadMemberCard').onclick = () => {
+    const printWindow = window.open('', '_blank');
+
+    if (!printWindow) {
+      alert('PDF তৈরির জন্য ব্রাউজারে পপ-আপ অনুমতি দিন।');
+      return;
+    }
+
+    const card = $('#digitalMemberCard').outerHTML;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="bn">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>সদস্য পরিচয়পত্র</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+          #digitalMemberCard {
+            width: 340px;
+            margin: 20px auto;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          @page {
+            size: A5 portrait;
+            margin: 10mm;
+          }
+        </style>
+      </head>
+      <body>
+        ${card}
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        <\/script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
+}
+
 async function memberView() {
   const menuItems = [
     { id: 'home', icon: '⌂', label: 'হোম' },
