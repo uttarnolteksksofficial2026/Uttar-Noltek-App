@@ -2175,9 +2175,11 @@ async function memberView() {
 
   $('#detectLocation').onclick = detectPrayerLocation;
 
-  setTimeout(() => {
+const cardPage = document.querySelector('[data-page="idcards"]');
+const cardContainer = document.getElementById('memberIdCard');
+
+if (cardPage && cardContainer) {
   setupMemberIdCard();
-}, 100);
 }
 
 /* ADMIN DASHBOARD */
