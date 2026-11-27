@@ -1297,7 +1297,60 @@ async function memberView() {
 
   bindLogout();
   setupNavigation();
+  
+const photoInput = $('#profilePhotoInput');
+const uploadButton = $('#uploadProfilePhoto');
+const photoMessage = $('#photoMessage');
 
+uploadButton.onclick = async () => {
+  const file = photoInput.files[0];
+
+  if (!file) {
+    photoMessage.textContent = 'আগে একটি ছবি নির্বাচন করুন।';
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    photoMessage.textContent = 'শুধু ছবি নির্বাচন করুন।';
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    photoMessage.textContent = 'ছবির সাইজ ৫ MB-এর কম হতে হবে।';
+    return;
+  }
+
+  uploadButton.disabled = true;
+  photoMessage.textContent = 'ছবি আপলোড হচ্ছে...';
+
+  try {
+    const photoRef = ref(
+      storage,
+      `profilePhotos/${currentUser.uid}/${Date.now()}`
+    );
+
+    await uploadBytes(photoRef, file);
+
+    const photoURL = await getDownloadURL(photoRef);
+
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      photoURL,
+      updatedAt: serverTimestamp()
+    });
+
+    profile.photoURL = photoURL;
+    $('#profilePhoto').src = photoURL;
+
+    photoMessage.textContent = 'প্রোফাইল ছবি সফলভাবে পরিবর্তন হয়েছে।';
+    photoInput.value = '';
+
+  } catch (error) {
+    console.error('PHOTO UPLOAD ERROR:', error);
+    photoMessage.textContent = 'ছবি আপলোড হয়নি: ' + error.message;
+  } finally {
+    uploadButton.disabled = false;
+  }
+};
   try {
     const [dues, payments, notices, activities] = await Promise.all([
       getList('dues', [where('memberUid', '==', currentUser.uid)]),
