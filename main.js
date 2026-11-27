@@ -950,21 +950,57 @@ async function memberView() {
   ];
 
   app.innerHTML = baseHeader() + menuDrawer(menuItems) + `
-    <main class="app-main">
-      <div data-page="home">
-        <section class="hero">
-          <div class="eyebrow">MEMBER DASHBOARD</div>
-          <h1>স্বাগতম</h1>
-          <p>${escapeHTML(profile.phone || currentUser.phoneNumber)}</p>
-          <span class="status">অনুমোদিত সদস্য</span>
-        </section>
+    <section class="hero">
+  <div class="eyebrow">MEMBER DASHBOARD</div>
 
-        <section class="panel">
-          <h2 class="heading-blue">সদস্য পরিচিতি</h2>
-          <p>সদস্য আইডি: ${escapeHTML(currentUser.uid.slice(0, 10).toUpperCase())}</p>
-          <p>মোবাইল: ${escapeHTML(profile.phone || '')}</p>
-          <p>অবস্থা: অনুমোদিত</p>
-        </section>
+  <h1>স্বাগতম, ${escapeHTML(profile.fullName || currentUser.displayName || 'সদস্য')}</h1>
+
+  <p>${escapeHTML(profile.phone || currentUser.phoneNumber || '')}</p>
+
+  <span class="status">অনুমোদিত সদস্য</span>
+</section>
+
+<section class="panel">
+  <h2 class="heading-blue">আমার প্রোফাইল</h2>
+
+  <div style="text-align:center; margin:20px 0;">
+    <img
+      src="${escapeHTML(profile.photoURL || '/logo.png')}"
+      alt="প্রোফাইল ছবি"
+      style="width:100px;height:100px;border-radius:50%;object-fit:cover;"
+    >
+  </div>
+
+  <p><strong>নাম:</strong>
+    ${escapeHTML(profile.fullName || 'নাম দেওয়া হয়নি')}
+  </p>
+
+  <p><strong>সদস্য আইডি:</strong>
+    ${escapeHTML(currentUser.uid.slice(0, 10).toUpperCase())}
+  </p>
+
+  <p><strong>ইমেইল:</strong>
+    ${escapeHTML(profile.email || currentUser.email || '')}
+  </p>
+
+  <p><strong>মোবাইল:</strong>
+    ${escapeHTML(profile.phone || '')}
+  </p>
+
+  <p><strong>ঠিকানা:</strong>
+    ${escapeHTML(profile.address || 'ঠিকানা দেওয়া হয়নি')}
+  </p>
+
+  <p><strong>রক্তের গ্রুপ:</strong>
+    ${escapeHTML(profile.bloodGroup || 'জানা নেই')}
+  </p>
+
+  <p><strong>পেশা:</strong>
+    ${escapeHTML(profile.occupation || 'উল্লেখ নেই')}
+  </p>
+
+  <p><strong>অবস্থা:</strong> অনুমোদিত</p>
+</section>
       </div>
 
       <div data-page="dues" hidden>
