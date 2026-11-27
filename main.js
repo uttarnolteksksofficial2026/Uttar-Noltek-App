@@ -1180,6 +1180,139 @@ async function memberView() {
   ];
 
   app.innerHTML = baseHeader() + menuDrawer(menuItems) + `
+  
+<section id="prayerBanner" style="
+  position:relative;
+  overflow:hidden;
+  padding:22px 15px;
+  border-radius:24px;
+  color:#fff;
+  background:
+    radial-gradient(ellipse at 50% -20%,rgba(212,175,55,.28),transparent 55%),
+    linear-gradient(155deg,#031f1c,#064e3b 55%,#022c22);
+  border:1px solid #b99a45;
+  box-shadow:0 14px 35px rgba(0,30,20,.25);
+">
+
+  <div style="
+    position:absolute;
+    top:-35px;
+    right:-25px;
+    font-size:125px;
+    color:rgba(255,220,120,.09);
+    line-height:1;
+    pointer-events:none;
+  ">☾</div>
+
+  <div style="position:relative;z-index:1;text-align:center;">
+
+    <div style="
+      color:#e8c76a;
+      font-size:12px;
+      letter-spacing:2px;
+      margin-bottom:8px;
+    ">✦ بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ ✦</div>
+
+    <h2 style="
+      margin:0;
+      color:#fff1bd;
+      font-size:25px;
+      font-weight:800;
+      text-shadow:0 2px 12px #001c14;
+    ">নামাজের সময়সূচী</h2>
+
+    <div style="
+      width:75px;
+      height:2px;
+      margin:13px auto;
+      background:linear-gradient(90deg,transparent,#e8c76a,transparent);
+    "></div>
+
+    <p id="prayerLocation" style="
+      margin:0 0 17px;
+      color:#d7eee2;
+      font-size:13px;
+    ">📍 আপনার লোকেশন শনাক্ত হচ্ছে...</p>
+
+    <div id="prayerTimes" style="
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:9px;
+      text-align:center;
+    ">
+      <p>🌅 ফজর: --:--</p>
+      <p>☀️ সূর্যোদয়: --:--</p>
+      <p>🕛 যোহর: --:--</p>
+      <p>🌤️ আসর: --:--</p>
+      <p>🌇 মাগরিব: --:--</p>
+      <p>🌙 এশা: --:--</p>
+    </div>
+
+    <div id="iftarTime" style="
+      margin-top:12px;
+      padding:15px 12px;
+      border-radius:16px;
+      background:linear-gradient(120deg,#8b5e16,#d4a83d,#8b5e16);
+      color:#fffbea;
+      border:1px solid #f3d77c;
+      font-size:17px;
+      font-weight:800;
+      box-shadow:inset 0 1px rgba(255,255,255,.25);
+    ">🌙 ইফতার: --:--</div>
+
+    <div style="
+      margin-top:12px;
+      padding:12px;
+      border-radius:15px;
+      background:rgba(255,255,255,.055);
+      border:1px solid rgba(232,199,106,.22);
+      color:#f5e9c3;
+      font-size:13px;
+      line-height:1.9;
+    ">
+      <div style="color:#e8c76a;font-size:23px;">❝</div>
+      আল্লাহর কাছে সর্বাধিক প্রিয় আমল হলো সময়মতো সালাত আদায় করা।
+      <div style="color:#e8c76a;font-size:12px;margin-top:5px;">
+        — সহিহ বুখারি: ৫২৭
+      </div>
+    </div>
+
+    <button type="button" id="detectLocation" class="btn" style="
+      width:100%;
+      margin-top:15px;
+      padding:13px;
+      border-radius:30px;
+      background:linear-gradient(120deg,#f4d675,#d4af37);
+      color:#153c2b;
+      font-size:14px;
+      font-weight:800;
+      border:1px solid #ffe9a0;
+      box-shadow:0 5px 15px rgba(0,0,0,.18);
+    ">📍 আমার লোকেশন শনাক্ত করুন</button>
+
+    <div style="
+      margin-top:13px;
+      color:rgba(255,255,255,.45);
+      font-size:10px;
+      letter-spacing:2px;
+    ">✧ UNITY IS STRENGTH ✧</div>
+
+  </div>
+</section>
+
+<style>
+#prayerTimes p {
+  margin:0;
+  padding:13px 5px;
+  border-radius:14px;
+  background:rgba(255,255,255,.075);
+  border:1px solid rgba(232,199,106,.2);
+  color:#fff8df;
+  font-size:13px;
+  line-height:1.6;
+}
+</style>
+
     <section class="hero">
   <div class="eyebrow">MEMBER DASHBOARD</div>
 
