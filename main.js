@@ -1649,7 +1649,11 @@ function setupMemberIdCard() {
 async function memberView() {
   const menuItems = [
     { id: 'home', icon: '⌂', label: 'হোম' },
+    { id: 'profile', icon: '👤', label: 'আমার প্রোফাইল' },
+    { id: 'members', icon: '👥', label: 'সকল সদস্য' },
+    { id: 'finance', icon: '🤲', label: 'আয়-ব্যয়' },
     { id: 'dues', icon: '৳', label: 'আমার চাঁদা ও রশিদ' },
+    { id: 'idcards', icon: '🪪', label: 'আমার আইডি কার্ড' },
     { id: 'notices', icon: '▤', label: 'নোটিশ' },
     { id: 'activities', icon: '☆', label: 'কার্যক্রম' },
     { id: 'rules', icon: '📜', label: 'নিয়ম-কানুন' },
@@ -1658,202 +1662,123 @@ async function memberView() {
     { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
   ];
 
+  const esc = value => escapeHTML(String(value ?? ''));
+
+  const dateText = value => {
+    if (!value) return 'তথ্য নেই';
+    const date = value.toDate ? value.toDate() : new Date(value);
+    if (isNaN(date.getTime())) return 'তথ্য নেই';
+    return date.toLocaleDateString('bn-BD', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+  };
+
   app.innerHTML = baseHeader() + menuDrawer(menuItems) + `
-  
-<section id="prayerBanner" style="
-  position:relative;
-  overflow:hidden;
-  padding:22px 15px;
-  border-radius:24px;
-  color:#fff;
-  background:
-    radial-gradient(ellipse at 50% -20%,rgba(212,175,55,.28),transparent 55%),
-    linear-gradient(155deg,#031f1c,#064e3b 55%,#022c22);
-  border:1px solid #b99a45;
-  box-shadow:0 14px 35px rgba(0,30,20,.25);
-">
+    <main class="app-main">
 
-  <div style="
-    position:absolute;
-    top:-35px;
-    right:-25px;
-    font-size:125px;
-    color:rgba(255,220,120,.09);
-    line-height:1;
-    pointer-events:none;
-  ">☾</div>
+      <div data-page="home">
+        <section class="hero">
+          <div class="eyebrow">MEMBER DASHBOARD</div>
+          <h1>স্বাগতম, ${esc(profile.fullName || currentUser.displayName || 'সদস্য')}</h1>
+          <p>${esc(profile.phone || currentUser.phoneNumber || '')}</p>
+          <span class="badge">অনুমোদিত সদস্য</span>
+        </section>
 
-  <div style="position:relative;z-index:1;text-align:center;">
+        <section class="panel">
+          <h2 class="heading-green">আমার পরিচয়</h2>
+          <div style="display:flex;align-items:center;gap:15px">
+            <img src="${esc(profile.photoURL || '/logo.png')}"
+              alt="প্রোফাইল"
+              style="width:75px;height:75px;object-fit:cover;border-radius:50%;border:3px solid #d4af37">
+            <div>
+              <h3>${esc(profile.fullName || 'নাম দেওয়া হয়নি')}</h3>
+              <p>সদস্য আইডি: ${esc(currentUser.uid.slice(0,10).toUpperCase())}</p>
+              <p>অবস্থা: অনুমোদিত</p>
+            </div>
+          </div>
+          <button class="btn" data-goto="profile">প্রোফাইল সম্পাদনা করুন</button>
+        </section>
 
-    <div style="
-      color:#e8c76a;
-      font-size:12px;
-      letter-spacing:2px;
-      margin-bottom:8px;
-    ">✦ بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ ✦</div>
-
-    <h2 style="
-      margin:0;
-      color:#fff1bd;
-      font-size:25px;
-      font-weight:800;
-      text-shadow:0 2px 12px #001c14;
-    ">নামাজের সময়সূচী</h2>
-
-    <div style="
-      width:75px;
-      height:2px;
-      margin:13px auto;
-      background:linear-gradient(90deg,transparent,#e8c76a,transparent);
-    "></div>
-
-    <p id="prayerLocation" style="
-      margin:0 0 17px;
-      color:#d7eee2;
-      font-size:13px;
-    ">📍 আপনার লোকেশন শনাক্ত হচ্ছে...</p>
-
-    <div id="prayerTimes" style="
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:9px;
-      text-align:center;
-    ">
-      <p>🌅 ফজর: --:--</p>
-      <p>☀️ সূর্যোদয়: --:--</p>
-      <p>🕛 যোহর: --:--</p>
-      <p>🌤️ আসর: --:--</p>
-      <p>🌇 মাগরিব: --:--</p>
-      <p>🌙 এশা: --:--</p>
-    </div>
-
-    <div id="iftarTime" style="
-      margin-top:12px;
-      padding:15px 12px;
-      border-radius:16px;
-      background:linear-gradient(120deg,#8b5e16,#d4a83d,#8b5e16);
-      color:#fffbea;
-      border:1px solid #f3d77c;
-      font-size:17px;
-      font-weight:800;
-      box-shadow:inset 0 1px rgba(255,255,255,.25);
-    ">🌙 ইফতার: --:--</div>
-
-    <div style="
-      margin-top:12px;
-      padding:12px;
-      border-radius:15px;
-      background:rgba(255,255,255,.055);
-      border:1px solid rgba(232,199,106,.22);
-      color:#f5e9c3;
-      font-size:13px;
-      line-height:1.9;
-    ">
-      <div style="color:#e8c76a;font-size:23px;">❝</div>
-      আল্লাহর কাছে সর্বাধিক প্রিয় আমল হলো সময়মতো সালাত আদায় করা।
-      <div style="color:#e8c76a;font-size:12px;margin-top:5px;">
-        — সহিহ বুখারি: ৫২৭
+        <section class="panel">
+          <h2 class="heading-blue">সংগঠনের আর্থিক সারাংশ</h2>
+          <div class="tiles">
+            <article><b id="memberDashboardCount">০</b><span>মোট সদস্য</span></article>
+            <article><b id="memberDonationTotal">৳ ০</b><span>মোট অনুদান</span></article>
+            <article><b id="memberExpenseTotal">৳ ০</b><span>মোট খরচ</span></article>
+            <article><b id="memberBalanceTotal">৳ ০</b><span>অবশিষ্ট অর্থ</span></article>
+          </div>
+        </section>
       </div>
-    </div>
 
-    <button type="button" id="detectLocation" class="btn" style="
-      width:100%;
-      margin-top:15px;
-      padding:13px;
-      border-radius:30px;
-      background:linear-gradient(120deg,#f4d675,#d4af37);
-      color:#153c2b;
-      font-size:14px;
-      font-weight:800;
-      border:1px solid #ffe9a0;
-      box-shadow:0 5px 15px rgba(0,0,0,.18);
-    ">📍 আমার লোকেশন শনাক্ত করুন</button>
+      <div data-page="profile" hidden>
+        <section class="panel">
+          <h2 class="heading-green">আমার প্রোফাইল সম্পাদনা</h2>
+          <div style="text-align:center;margin-bottom:15px">
+            <img id="profilePhoto" src="${esc(profile.photoURL || '/logo.png')}"
+              alt="প্রোফাইল ছবি"
+              style="width:105px;height:105px;object-fit:cover;border-radius:50%;border:3px solid #d4af37">
+          </div>
 
-    <div style="
-      margin-top:13px;
-      color:rgba(255,255,255,.45);
-      font-size:10px;
-      letter-spacing:2px;
-    ">✧ UNITY IS STRENGTH ✧</div>
+          <label>নতুন প্রোফাইল ছবি</label>
+          <input type="file" id="profilePhotoInput" accept="image/*">
+          <button type="button" id="uploadProfilePhoto" class="btn">ছবি আপলোড করুন</button>
+          <p id="photoMessage"></p>
 
-  </div>
-</section>
+          <label>পূর্ণ নাম</label>
+          <input id="editFullName" value="${esc(profile.fullName || '')}">
 
-<style>
-#prayerTimes p {
-  margin:0;
-  padding:13px 5px;
-  border-radius:14px;
-  background:rgba(255,255,255,.075);
-  border:1px solid rgba(232,199,106,.2);
-  color:#fff8df;
-  font-size:13px;
-  line-height:1.6;
-}
-</style>
+          <label>মোবাইল নম্বর</label>
+          <input id="editPhone" value="${esc(profile.phone || '')}">
 
-    <section class="hero">
-  <div class="eyebrow">MEMBER DASHBOARD</div>
+          <label>ঠিকানা</label>
+          <textarea id="editAddress">${esc(profile.address || '')}</textarea>
 
-  <h1>স্বাগতম, ${escapeHTML(profile.fullName || currentUser.displayName || 'সদস্য')}</h1>
+          <label>রক্তের গ্রুপ</label>
+          <select id="editBloodGroup">
+            <option value="">নির্বাচন করুন</option>
+            ${['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g =>
+              `<option value="${g}" ${profile.bloodGroup === g ? 'selected' : ''}>${g}</option>`
+            ).join('')}
+          </select>
 
-  <p>${escapeHTML(profile.phone || currentUser.phoneNumber || '')}</p>
+          <label>পেশা</label>
+          <input id="editOccupation" value="${esc(profile.occupation || '')}">
 
-  <span class="status">অনুমোদিত সদস্য</span>
-</section>
+          <label>ইমেইল</label>
+          <input value="${esc(profile.email || currentUser.email || '')}" disabled>
 
-<section class="panel">
-  <h2 class="heading-blue">আমার প্রোফাইল</h2>
+          <p style="font-size:12px;color:var(--muted,#888)">
+            সদস্য আইডি, ইমেইল ও অনুমোদনের অবস্থা পরিবর্তন করা যাবে না।
+          </p>
+          <button type="button" class="primary" id="saveMemberProfile">প্রোফাইল সংরক্ষণ করুন</button>
+          <p id="profileSaveMessage"></p>
+        </section>
+      </div>
 
-<div style="text-align:center; margin:20px 0;">
-  <img
-    id="profilePhoto"
-    src="${escapeHTML(profile.photoURL || '/logo.png')}"
-    alt="প্রোফাইল ছবি"
-    style="width:110px;height:110px;border-radius:50%;object-fit:cover;"
-  >
+      <div data-page="members" hidden>
+        <section class="panel">
+          <h2 class="heading-blue">সংগঠনের সকল সদস্য</h2>
+          <input id="memberDirectorySearch" type="search"
+            placeholder="নাম, পেশা বা সদস্য আইডি দিয়ে খুঁজুন"
+            style="width:100%;margin-bottom:12px">
+          <div id="memberDirectory">সদস্য তালিকা লোড হচ্ছে...</div>
+        </section>
+      </div>
 
-  <div style="margin-top:15px;">
-    <input type="file" id="profilePhotoInput" accept="image/*">
-
-    <button type="button" id="uploadProfilePhoto" class="btn">
-      ছবি আপলোড করুন
-    </button>
-  </div>
-
-  <p id="photoMessage"></p>
-</div>
-
-  <p><strong>নাম:</strong>
-    ${escapeHTML(profile.fullName || 'নাম দেওয়া হয়নি')}
-  </p>
-
-  <p><strong>সদস্য আইডি:</strong>
-    ${escapeHTML(currentUser.uid.slice(0, 10).toUpperCase())}
-  </p>
-
-  <p><strong>ইমেইল:</strong>
-    ${escapeHTML(profile.email || currentUser.email || '')}
-  </p>
-
-  <p><strong>মোবাইল:</strong>
-    ${escapeHTML(profile.phone || '')}
-  </p>
-
-  <p><strong>ঠিকানা:</strong>
-    ${escapeHTML(profile.address || 'ঠিকানা দেওয়া হয়নি')}
-  </p>
-
-  <p><strong>রক্তের গ্রুপ:</strong>
-    ${escapeHTML(profile.bloodGroup || 'জানা নেই')}
-  </p>
-
-  <p><strong>পেশা:</strong>
-    ${escapeHTML(profile.occupation || 'উল্লেখ নেই')}
-  </p>
-
-  <p><strong>অবস্থা:</strong> অনুমোদিত</p>
-</section>
+      <div data-page="finance" hidden>
+        <section class="panel">
+          <h2 class="heading-green">সংগঠনের আর্থিক সারাংশ</h2>
+          <div class="tiles">
+            <article><b id="financeDonation">৳ ০</b><span>মোট অনুদান</span></article>
+            <article><b id="financeExpense">৳ ০</b><span>মোট খরচ</span></article>
+            <article><b id="financeBalance">৳ ০</b><span>অবশিষ্ট অর্থ</span></article>
+          </div>
+          <p id="financeMessage">আর্থিক হিসাব লোড হচ্ছে...</p>
+        </section>
+        <section class="panel">
+          <h2 class="heading-blue">হিসাবের স্বচ্ছতা</h2>
+          <p>সদস্যরা এখানে শুধু আর্থিক সারাংশ দেখতে পারবেন। হিসাব পরিবর্তনের অনুমতি অ্যাডমিনের থাকবে।</p>
+        </section>
       </div>
 
       <div data-page="dues" hidden>
@@ -1864,6 +1789,13 @@ async function memberView() {
         <section class="panel">
           <h2 class="heading-blue">আমার জমার ইতিহাস ও ডিজিটাল রশিদ</h2>
           <div id="myPayments">লোড হচ্ছে...</div>
+        </section>
+      </div>
+
+      <div data-page="idcards" hidden>
+        <section class="panel">
+          <h2 class="heading-blue">আমার ডিজিটাল সদস্য আইডি কার্ড</h2>
+          <div id="memberIdCard"></div>
         </section>
       </div>
 
@@ -1887,32 +1819,30 @@ async function memberView() {
           <div id="memberRules">লোড হচ্ছে...</div>
         </section>
       </div>
-      <div data-page="prayer" hidden>
-  <section class="panel">
-    <h2 class="heading-blue">🕌 নামাজের সময়সূচী</h2>
-
-    <p id="prayerLocation">আপনার লোকেশন শনাক্ত হচ্ছে...</p>
-
-    <div id="prayerTimes">
-      নামাজের সময়সূচী লোড হচ্ছে...
-    </div>
-
-    <p id="iftarTime"></p>
-
-    <button
-      type="button"
-      id="detectLocation"
-      class="btn"
-    >
-      লোকেশন শনাক্ত করুন
-    </button>
-  </section>
-</div>
 
       <div data-page="constitution" hidden>
         <section class="panel">
           <h2 class="heading-purple">সংগঠনের গঠনতন্ত্র</h2>
           <div id="memberConstitution">লোড হচ্ছে...</div>
+        </section>
+      </div>
+
+      <div data-page="prayer" hidden>
+        <section class="panel" style="text-align:center">
+          <div style="color:#d4af37;font-size:12px;letter-spacing:2px">
+            بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+          </div>
+          <h2 class="heading-green">🕌 নামাজের সময়সূচী</h2>
+          <p id="prayerLocation">আপনার লোকেশন শনাক্ত হচ্ছে...</p>
+          <div id="prayerTimes">সময়সূচী লোড হচ্ছে...</div>
+          <p id="iftarTime"></p>
+          <button type="button" id="detectLocation" class="btn">
+            📍 আমার লোকেশন শনাক্ত করুন
+          </button>
+        </section>
+        <section class="panel">
+          <p>আল্লাহর কাছে সর্বাধিক প্রিয় আমল হলো সময়মতো সালাত আদায় করা।</p>
+          <small>— সহিহ বুখারি: ৫২৭</small>
         </section>
       </div>
 
@@ -1922,177 +1852,197 @@ async function memberView() {
     ${bottomNavigation([
       { id: 'home', icon: '⌂', label: 'হোম' },
       { id: 'dues', icon: '৳', label: 'চাঁদা' },
-      { id: 'notices', icon: '▤', label: 'নোটিশ' },
-      { id: 'activities', icon: '☆', label: 'কার্যক্রম' },
+      { id: 'members', icon: '👥', label: 'সদস্য' },
+      { id: 'finance', icon: '🤲', label: 'হিসাব' },
       { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
     ])}
-
     ${footer()}`;
 
   bindLogout();
   setupNavigation();
-setupMemberIdCard();
 
-  
-  // নামাজের সময়সূচী
-async function loadPrayerTimes(lat, lon) {
-  const prayerLocation = $('#prayerLocation');
-  const prayerTimes = $('#prayerTimes');
-  const iftarTime = $('#iftarTime');
+  document.querySelectorAll('[data-goto]').forEach(button => {
+    button.onclick = () => {
+      const page = button.dataset.goto;
+      document.querySelectorAll('[data-page]').forEach(item => {
+        item.hidden = item.dataset.page !== page;
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  });
 
-  prayerLocation.textContent = 'আপনার লোকেশন শনাক্ত হয়েছে';
+  $('#saveMemberProfile').onclick = async () => {
+    const message = $('#profileSaveMessage');
+    const button = $('#saveMemberProfile');
 
-  prayerTimes.textContent = 'সময়সূচী লোড হচ্ছে...';
-  iftarTime.textContent = '';
+    const fullName = $('#editFullName').value.trim();
+    const phone = $('#editPhone').value.trim();
+    const address = $('#editAddress').value.trim();
+    const bloodGroup = $('#editBloodGroup').value;
+    const occupation = $('#editOccupation').value.trim();
 
-  try {
-    const today = new Date();
-
-    const date =
-      String(today.getDate()).padStart(2, '0') + '-' +
-      String(today.getMonth() + 1).padStart(2, '0') + '-' +
-      today.getFullYear();
-
-    const url =
-      `https://api.aladhan.com/v1/timings/${date}` +
-      `?latitude=${lat}&longitude=${lon}&method=3`;
-
-    const response = await fetch(url);
-    const result = await response.json();
-
-    if (result.code !== 200) {
-      throw new Error('সময়সূচী পাওয়া যায়নি');
+    if (!fullName) {
+      message.textContent = 'আপনার পূর্ণ নাম লিখুন।';
+      return;
     }
 
-    const times = result.data.timings;
-    function format12Hour(time) {
-  const [h, m] = time.split(':').map(Number);
+    button.disabled = true;
+    message.textContent = 'প্রোফাইল সংরক্ষণ হচ্ছে...';
 
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour = h % 12 || 12;
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        fullName, phone, address, bloodGroup, occupation,
+        updatedAt: serverTimestamp()
+      });
 
-  return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
-}
-   prayerTimes.innerHTML = `
-  <p>🌙 সেহরি শেষ: ${format12Hour(times.Fajr)}</p>
-  <p>🌅 ফজর: ${format12Hour(times.Fajr)}</p>
-  <p>☀️ সূর্যোদয়: ${format12Hour(times.Sunrise)}</p>
-  <p>🕛 যোহর: ${format12Hour(times.Dhuhr)}</p>
-  <p>🌤️ আসর: ${format12Hour(times.Asr)}</p>
-  <p>🌇 মাগরিব: ${format12Hour(times.Maghrib)}</p>
-  <p>🌙 এশা: ${format12Hour(times.Isha)}</p>
-`;
-iftarTime.textContent =
-  '🌙 আজকের ইফতারের সময়: ' + format12Hour(times.Maghrib);
-    
-  } catch (error) {
-    prayerTimes.textContent =
-      'নামাজের সময় লোড হয়নি। আবার চেষ্টা করুন।';
-  }
-}
+      Object.assign(profile, {
+        fullName, phone, address, bloodGroup, occupation
+      });
 
-function detectPrayerLocation() {
-  const prayerLocation = $('#prayerLocation');
-
-  prayerLocation.textContent = 'লোকেশন শনাক্ত হচ্ছে...';
-
-  if (!navigator.geolocation) {
-    prayerLocation.textContent =
-      'আপনার ব্রাউজারে লোকেশন সুবিধা নেই।';
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    position => {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-
-      loadPrayerTimes(lat, lon);
-    },
-    () => {
-      prayerLocation.textContent =
-        'লোকেশন অনুমতি দিন অথবা HTTPS সাইটে খুলুন।';
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 15000
+      message.textContent = 'প্রোফাইল সফলভাবে সংরক্ষিত হয়েছে।';
+    } catch (error) {
+      console.error('PROFILE UPDATE ERROR:', error);
+      message.textContent = 'প্রোফাইল সংরক্ষণ করা যায়নি।';
+    } finally {
+      button.disabled = false;
     }
-  );
-}
+  };
 
-$('#detectLocation').onclick = detectPrayerLocation;
+  $('#uploadProfilePhoto').onclick = async () => {
+    const photoInput = $('#profilePhotoInput');
+    const button = $('#uploadProfilePhoto');
+    const message = $('#photoMessage');
+    const file = photoInput.files[0];
 
-detectPrayerLocation();
-const photoInput = $('#profilePhotoInput');
-const uploadButton = $('#uploadProfilePhoto');
-const photoMessage = $('#photoMessage');
+    if (!file) {
+      message.textContent = 'আগে একটি ছবি নির্বাচন করুন।';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      message.textContent = 'শুধু ছবি নির্বাচন করুন।';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      message.textContent = 'ছবির সাইজ ৫ MB-এর কম হতে হবে।';
+      return;
+    }
 
+    button.disabled = true;
+    message.textContent = 'ছবি আপলোড হচ্ছে...';
 
-uploadButton.onclick = async () => {
-  const file = photoInput.files[0];
-
-  if (!file) {
-    photoMessage.textContent = 'আগে একটি ছবি নির্বাচন করুন।';
-    return;
-  }
-
-  if (!file.type.startsWith('image/')) {
-    photoMessage.textContent = 'শুধু ছবি নির্বাচন করুন।';
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    photoMessage.textContent = 'ছবির সাইজ ৫ MB-এর কম হতে হবে।';
-    return;
-  }
-
-  uploadButton.disabled = true;
-  photoMessage.textContent = 'আপলোড শুরু হচ্ছে...';
-
-  try {
-    const photoRef = ref(
-      storage,
-      `profilePhotos/${currentUser.uid}/${Date.now()}`
-    );
-
-    const uploadTask = uploadBytesResumable(photoRef, file);
-
-    await new Promise((resolve, reject) => {
-      uploadTask.on(
-        'state_changed',
-        snapshot => {
-          const percent = Math.round(
-            snapshot.bytesTransferred / snapshot.totalBytes * 100
-          );
-
-          photoMessage.textContent = `ছবি আপলোড হচ্ছে... ${percent}%`;
-        },
-        error => reject(error),
-        () => resolve()
+    try {
+      const photoRef = ref(
+        storage,
+        `profilePhotos/${currentUser.uid}/${Date.now()}`
       );
+      const uploadTask = uploadBytesResumable(photoRef, file);
+
+      await new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          snapshot => {
+            const percent = Math.round(
+              snapshot.bytesTransferred / snapshot.totalBytes * 100
+            );
+            message.textContent = `ছবি আপলোড হচ্ছে... ${percent}%`;
+          },
+          reject,
+          resolve
+        );
+      });
+
+      const photoURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        photoURL,
+        updatedAt: serverTimestamp()
+      });
+
+      profile.photoURL = photoURL;
+      $('#profilePhoto').src = photoURL;
+      message.textContent = 'প্রোফাইল ছবি পরিবর্তন হয়েছে।';
+      photoInput.value = '';
+    } catch (error) {
+      console.error('PHOTO UPLOAD ERROR:', error);
+      message.textContent = 'ছবি আপলোড করা যায়নি: ' + error.message;
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  let directoryMembers = [];
+
+  const renderDirectory = () => {
+    const search = ($('#memberDirectorySearch').value || '').toLowerCase();
+
+    const filtered = directoryMembers.filter(member => {
+      const name = String(member.fullName || '').toLowerCase();
+      const job = String(member.occupation || '').toLowerCase();
+      const id = String(member.uid || member.id || '').toLowerCase();
+      return name.includes(search) || job.includes(search) || id.includes(search);
     });
 
-    const photoURL = await getDownloadURL(uploadTask.snapshot.ref);
+    $('#memberDirectory').innerHTML = filtered.length
+      ? filtered.map(member => `
+        <div class="noticeitem" style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <img src="${esc(member.photoURL || '/logo.png')}"
+            style="width:48px;height:48px;object-fit:cover;border-radius:50%"
+            alt="সদস্য">
+          <div>
+            <b>${esc(member.fullName || 'নাম নেই')}</b>
+            <p>আইডি: ${esc(String(member.uid || member.id || '').slice(0,10).toUpperCase())}</p>
+            <p>পেশা: ${esc(member.occupation || 'উল্লেখ নেই')}</p>
+            <p>যোগদানের তারিখ: ${dateText(member.createdAt)}</p>
+          </div>
+        </div>
+      `).join('')
+      : '<p>কোনো সদস্য পাওয়া যায়নি।</p>';
+  };
 
-    await updateDoc(doc(db, 'users', currentUser.uid), {
-      photoURL,
-      updatedAt: serverTimestamp()
-    });
+  $('#memberDirectorySearch').addEventListener('input', renderDirectory);
 
-    profile.photoURL = photoURL;
-    $('#profilePhoto').src = photoURL;
-
-    photoMessage.textContent = 'প্রোফাইল ছবি সফলভাবে পরিবর্তন হয়েছে।';
-    photoInput.value = '';
-
+  try {
+    const users = await getList('users');
+    directoryMembers = users.filter(member =>
+      member.status === 'approved' && member.role !== 'admin'
+    );
+    $('#memberDashboardCount').textContent =
+      directoryMembers.length.toLocaleString('bn-BD');
+    renderDirectory();
   } catch (error) {
-    console.error('PHOTO UPLOAD ERROR:', error);
-    photoMessage.textContent = 'আপলোড ব্যর্থ: ' + error.message;
-  } finally {
-    uploadButton.disabled = false;
+    console.error('MEMBER DIRECTORY ERROR:', error);
+    $('#memberDirectory').textContent =
+      'সদস্য তালিকা দেখার অনুমতি নেই অথবা তথ্য লোড করা যায়নি।';
   }
-};
-    
+
+  try {
+    const [donations, expenses] = await Promise.all([
+      getList('donations'),
+      getList('expenses')
+    ]);
+
+    const donationTotal = donations.reduce(
+      (sum, item) => sum + (Number(item.amount) || 0), 0
+    );
+    const expenseTotal = expenses.reduce(
+      (sum, item) => sum + (Number(item.amount) || 0), 0
+    );
+    const balance = donationTotal - expenseTotal;
+    const fmt = value => money(value);
+
+    $('#memberDonationTotal').textContent = fmt(donationTotal);
+    $('#memberExpenseTotal').textContent = fmt(expenseTotal);
+    $('#memberBalanceTotal').textContent = fmt(balance);
+    $('#financeDonation').textContent = fmt(donationTotal);
+    $('#financeExpense').textContent = fmt(expenseTotal);
+    $('#financeBalance').textContent = fmt(balance);
+    $('#financeMessage').textContent = 'হিসাবের সারাংশ সফলভাবে লোড হয়েছে।';
+  } catch (error) {
+    console.error('MEMBER FINANCE ERROR:', error);
+    $('#financeMessage').textContent =
+      'আর্থিক হিসাব দেখার অনুমতি নেই অথবা তথ্য লোড করা যায়নি।';
+  }
+
   try {
     const [dues, payments, notices, activities] = await Promise.all([
       getList('dues', [where('memberUid', '==', currentUser.uid)]),
@@ -2103,9 +2053,8 @@ uploadButton.onclick = async () => {
 
     $('#myDues').innerHTML = dues.length
       ? dues.map(d => `
-        <div class="noticeitem">
-          ${escapeHTML(d.month || '')} — ${money(d.amount)}
-        </div>`).join('')
+        <div class="noticeitem">${esc(d.month || '')} — ${money(d.amount)}</div>
+      `).join('')
       : 'এখনো কোনো চাঁদা নির্ধারণ করা হয়নি।';
 
     $('#myPayments').innerHTML = renderPayments(payments);
@@ -2120,30 +2069,107 @@ uploadButton.onclick = async () => {
     $('#memberNotices').innerHTML = notices.length
       ? notices.map(n => `
         <div class="noticeitem">
-          <h3>${escapeHTML(n.title)}</h3>
-          <p>${escapeHTML(n.body)}</p>
-        </div>`).join('')
+          <h3>${esc(n.title)}</h3>
+          <p>${esc(n.body)}</p>
+        </div>
+      `).join('')
       : 'এখনো কোনো নোটিশ প্রকাশিত হয়নি।';
 
     $('#memberActivities').innerHTML = activities.length
       ? activities.map(a => `
         <div class="noticeitem">
-          <h3>${escapeHTML(a.title)}</h3>
-          <p>${escapeHTML(a.body || '')}</p>
-        </div>`).join('')
+          <h3>${esc(a.title)}</h3>
+          <p>${esc(a.body || '')}</p>
+        </div>
+      `).join('')
       : 'এখনো কোনো কার্যক্রম প্রকাশিত হয়নি।';
 
     await Promise.all([
       loadMemberRules(),
       loadMemberConstitution()
     ]);
-
   } catch (error) {
-    console.error(error);
-    alert('তথ্য লোড করতে সমস্যা হয়েছে।'); 
+    console.error('MEMBER DATA ERROR:', error);
+    alert('কিছু তথ্য লোড করতে সমস্যা হয়েছে।');
   }
+
+  async function loadPrayerTimes(lat, lon) {
+    const prayerLocation = $('#prayerLocation');
+    const prayerTimes = $('#prayerTimes');
+    const iftarTime = $('#iftarTime');
+
+    prayerLocation.textContent = 'আপনার লোকেশন শনাক্ত হয়েছে';
+    prayerTimes.textContent = 'সময়সূচী লোড হচ্ছে...';
+
+    try {
+      const today = new Date();
+      const date =
+        String(today.getDate()).padStart(2, '0') + '-' +
+        String(today.getMonth() + 1).padStart(2, '0') + '-' +
+        today.getFullYear();
+
+      const url =
+        `https://api.aladhan.com/v1/timings/${date}` +
+        `?latitude=${lat}&longitude=${lon}&method=3`;
+
+      const response = await fetch(url);
+      const result = await response.json();
+
+      if (result.code !== 200) throw new Error('সময়সূচী পাওয়া যায়নি');
+
+      const times = result.data.timings;
+      const format12Hour = time => {
+        const [h, m] = time.split(':').map(Number);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const hour = h % 12 || 12;
+        return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+      };
+
+      prayerTimes.innerHTML = `
+        <div class="tiles">
+          <article>🌙 সেহরি শেষ<b>${format12Hour(times.Fajr)}</b></article>
+          <article>🌅 ফজর<b>${format12Hour(times.Fajr)}</b></article>
+          <article>☀️ সূর্যোদয়<b>${format12Hour(times.Sunrise)}</b></article>
+          <article>🕛 যোহর<b>${format12Hour(times.Dhuhr)}</b></article>
+          <article>🌤️ আসর<b>${format12Hour(times.Asr)}</b></article>
+          <article>🌇 মাগরিব<b>${format12Hour(times.Maghrib)}</b></article>
+          <article>🌙 এশা<b>${format12Hour(times.Isha)}</b></article>
+        </div>
+      `;
+      iftarTime.textContent =
+        '🌙 আজকের ইফতারের সময়: ' + format12Hour(times.Maghrib);
+    } catch (error) {
+      console.error('PRAYER TIME ERROR:', error);
+      prayerTimes.textContent = 'নামাজের সময় লোড হয়নি। আবার চেষ্টা করুন।';
+    }
+  }
+
+  function detectPrayerLocation() {
+    const prayerLocation = $('#prayerLocation');
+    prayerLocation.textContent = 'লোকেশন শনাক্ত হচ্ছে...';
+
+    if (!navigator.geolocation) {
+      prayerLocation.textContent = 'আপনার ব্রাউজারে লোকেশন সুবিধা নেই।';
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      position => loadPrayerTimes(
+        position.coords.latitude,
+        position.coords.longitude
+      ),
+      () => {
+        prayerLocation.textContent =
+          'লোকেশন অনুমতি দিন অথবা HTTPS সাইটে খুলুন।';
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }
+
+  $('#detectLocation').onclick = detectPrayerLocation;
+
   setupMemberIdCard();
-  }
+}
 
 /* ADMIN DASHBOARD */
 
