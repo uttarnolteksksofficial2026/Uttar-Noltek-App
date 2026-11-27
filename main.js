@@ -1484,15 +1484,27 @@ async function loadPrayerTimes(lat, lon) {
     }
 
     const times = result.data.timings;
+    function format12Hour(time) {
+  const [h, m] = time.split(':').map(Number);
 
-    prayerTimes.innerHTML = `
-      <p>🌅 ফজর: ${times.Fajr}</p>
-      <p>☀️ সূর্যোদয়: ${times.Sunrise}</p>
-      <p>🕛 যোহর: ${times.Dhuhr}</p>
-      <p>🌤️ আসর: ${times.Asr}</p>
-      <p>🌇 মাগরিব: ${times.Maghrib}</p>
-      <p>🌙 এশা: ${times.Isha}</p>
-    `;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+
+  return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+}
+   prayerTimes.innerHTML = `
+  <p>🌙 সেহরি শেষ: ${format12Hour(times.Fajr)}</p>
+  <p>🌅 ফজর: ${format12Hour(times.Fajr)}</p>
+  <p>☀️ সূর্যোদয়: ${format12Hour(times.Sunrise)}</p>
+  <p>🕛 যোহর: ${format12Hour(times.Dhuhr)}</p>
+  <p>🌤️ আসর: ${format12Hour(times.Asr)}</p>
+  <p>🌇 মাগরিব: ${format12Hour(times.Maghrib)}</p>
+  <p>🌙 এশা: ${format12Hour(times.Isha)}</p>
+`;
+
+iftarTime.textContent =
+  '🌙 আজকের ইফতার: ' + format12Hour(times.Maghrib);
+    
 
     iftarTime.textContent =
       '🌙 আজকের ইফতারের সময়: ' + times.Maghrib;
