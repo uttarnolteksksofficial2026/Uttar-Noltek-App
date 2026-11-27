@@ -1936,7 +1936,7 @@ async function memberView() {
   }
 
   $('#detectLocation').onclick = detectPrayerLocation;
-
+console.log('ID CARD FUNCTION STARTED');
 try {
   await setupMemberIdCard();
 } catch (error) {
