@@ -2231,7 +2231,6 @@ try {
   $('#memberIdCard').innerHTML =
     '<p>আইডি কার্ড লোড করা যায়নি।</p>';
 }
-}  
 
 /* ADMIN DASHBOARD */
 
