@@ -1168,7 +1168,9 @@ function renderPayments(payments) {
 /* MEMBER DASHBOARD */
 
 function setupMemberIdCard() {
-  const homePage = document.querySelector('[data-page="home"]');
+  const homePage =
+    document.querySelector('[data-page="home"]') ||
+    document.querySelector('.app-main');
 
   if (!homePage || !currentUser || !profile) return;
 
@@ -1203,54 +1205,29 @@ function setupMemberIdCard() {
         text-align:center;
         box-shadow:0 5px 18px rgba(0,0,0,.18);
       ">
-        <img src="/logo.png"
-          alt="সংগঠনের লোগো"
+        <img src="/logo.png" alt="সংগঠনের লোগো"
           style="width:65px;height:65px;object-fit:contain;">
 
-        <h3 style="margin:8px 0;color:#f7d879;">
+        <h3 style="color:#f7d879;">
           উত্তর নলটেক সমাজ কল্যাণ সংগঠন
         </h3>
+        <p>ডিজিটাল সদস্য পরিচয়পত্র</p>
 
-        <p style="margin:5px 0 15px;color:#fff;">
-          ডিজিটাল সদস্য পরিচয়পত্র
-        </p>
+        <img src="${escapeHTML(photoURL)}" alt="সদস্যের ছবি"
+          style="width:105px;height:115px;object-fit:cover;
+          border:3px solid #e5c36b;border-radius:12px;">
 
-        <img src="${escapeHTML(photoURL)}"
-          alt="সদস্যের ছবি"
-          style="
-            width:105px;height:115px;
-            object-fit:cover;
-            border:3px solid #e5c36b;
-            border-radius:12px;
-          ">
+        <h2 style="color:#ffe39a;">${name}</h2>
+        <p>সদস্য আইডি: ${memberId}</p>
 
-        <h2 style="color:#ffe39a;margin:12px 0 5px;">
-          ${name}
-        </h2>
-
-        <p>সদস্য আইডি: ${escapeHTML(memberId)}</p>
-
-        <div style="
-          text-align:left;
-          background:rgba(255,255,255,.10);
-          padding:12px;
-          border-radius:10px;
-          line-height:1.8;
-        ">
+        <div style="text-align:left;background:rgba(255,255,255,.10);
+          padding:12px;border-radius:10px;line-height:1.8;">
           <p>মোবাইল: ${phone}</p>
           <p>ঠিকানা: ${address}</p>
           <p>রক্তের গ্রুপ: ${bloodGroup}</p>
           <p>পেশা: ${occupation}</p>
           <p>সদস্যপদ: অনুমোদিত</p>
         </div>
-
-        <p style="
-          color:#f7d879;
-          margin:15px 0 0;
-          font-size:12px;
-        ">
-          এই পরিচয়পত্র সংগঠনের ডিজিটাল সদস্য পরিচয়ের জন্য
-        </p>
       </div>
 
       <button type="button" class="primary"
@@ -1265,7 +1242,7 @@ function setupMemberIdCard() {
     const printWindow = window.open('', '_blank');
 
     if (!printWindow) {
-      alert('PDF তৈরির জন্য ব্রাউজারে পপ-আপ অনুমতি দিন।');
+      alert('PDF তৈরির জন্য পপ-আপ অনুমতি দিন।');
       return;
     }
 
@@ -1276,31 +1253,22 @@ function setupMemberIdCard() {
       <html lang="bn">
       <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>সদস্য পরিচয়পত্র</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-          }
+          body { font-family: Arial, sans-serif; padding: 20px; }
           #digitalMemberCard {
             width: 340px;
             margin: 20px auto;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          @page {
-            size: A5 portrait;
-            margin: 10mm;
-          }
+          @page { size: A5 portrait; margin: 10mm; }
         </style>
       </head>
       <body>
         ${card}
         <script>
-          window.onload = function() {
-            window.print();
-          };
+          window.onload = function() { window.print(); };
         <\/script>
       </body>
       </html>
@@ -1309,7 +1277,6 @@ function setupMemberIdCard() {
     printWindow.document.close();
   };
 }
-
 
 async function memberView() {
   const menuItems = [
