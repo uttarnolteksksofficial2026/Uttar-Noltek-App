@@ -1649,8 +1649,8 @@ async function refreshAdmin() {
     $('#pendingCount').textContent = pending.length.toLocaleString('bn-BD');
 
     const donationSum = donations.reduce(
-      (s, x) => s + Number(x.amount || 0), 0
-    );
+  (s, x) => s + Number(x.amount || 0), 0
+);
 
     const expenseSum = expenses.reduce(
       (s, x) => s + Number(x.amount || 0), 0
