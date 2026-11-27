@@ -586,7 +586,7 @@ function loginView() {
     message.textContent = '';
   };
 
-  $('#sendOtp').onclick = sendOtp;
+  $('#sendOtp').onclick = login;
   $('#verifyOtp').onclick = verifyOtp;
   $('#registerMember').onclick = registerMember;
 }
@@ -2126,7 +2126,34 @@ async function deleteConstitution(id) {
     alert('মুছতে সমস্যা হয়েছে: ' + error.message);
   }
 }
+async function login() {
+  const message = $('#message');
+  const button = $('#sendOtp');
 
+  const email = $('#email').value.trim();
+  const password = $('#password').value;
+
+  if (!email || !password) {
+    message.textContent = 'ইমেইল ও পাসওয়ার্ড লিখুন।';
+    return;
+  }
+
+  button.disabled = true;
+  message.textContent = 'লগইন হচ্ছে...';
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    message.textContent = 'লগইন সফল হয়েছে।';
+  } catch (error) {
+    console.error('LOGIN ERROR:', error);
+    message.textContent =
+      error.code === 'auth/invalid-credential'
+        ? 'ইমেইল অথবা পাসওয়ার্ড ভুল।'
+        : error.message || 'লগইন করা যায়নি।';
+  } finally {
+    button.disabled = false;
+  }
+}
 /* APP START */
 async function registerMember() {
   const message = document.querySelector('#message');
