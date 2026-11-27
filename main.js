@@ -1503,7 +1503,7 @@ async function loadPrayerTimes(lat, lon) {
 `;
 
 iftarTime.textContent =
-  '🌙 আজকের ইফতার: ' + format12Hour(times.Maghrib);
+  '🌙 আজকের ইফতারের সময়: ' + format12Hour(times.Maghrib);
     
 
     iftarTime.textContent =
