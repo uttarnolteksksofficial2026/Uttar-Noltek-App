@@ -1888,30 +1888,42 @@ async function ensureDefaultConstitution(items) {
 
 /* ADMIN DATA */
 
+
+
 async function refreshAdmin() {
   try {
-    const [users, dues, payments, donations, expenses, rules, constitution] =
-      await Promise.all([
-        getList('users'),
-        getList('dues'),
-        getList('payments'),
-        getList('donations'),
-        getList('expenses'),
-        getList('rules'),
-        getList('constitution')
-      ]);
+    const [
+      users,
+      dues,
+      payments,
+      donations,
+      expenses,
+      rules,
+      constitution
+    ] = await Promise.all([
+      getList('users'),
+      getList('dues'),
+      getList('payments'),
+      getList('donations'),
+      getList('expenses'),
+      getList('rules'),
+      getList('constitution')
+    ]);
 
     await loadConstitutionStatus();
 
     const members = users.filter(u => u.status === 'approved');
     const pending = users.filter(u => u.status === 'pending');
 
-    $('#memberCount').textContent = members.length.toLocaleString('bn-BD');
-    $('#pendingCount').textContent = pending.length.toLocaleString('bn-BD');
+    $('#memberCount').textContent =
+      members.length.toLocaleString('bn-BD');
+
+    $('#pendingCount').textContent =
+      pending.length.toLocaleString('bn-BD');
 
     const donationSum = donations.reduce(
-  (s, x) => s + Number(x.amount || 0), 0
-);
+      (s, x) => s + Number(x.amount || 0), 0
+    );
 
     const expenseSum = expenses.reduce(
       (s, x) => s + Number(x.amount || 0), 0
@@ -1920,15 +1932,21 @@ async function refreshAdmin() {
     $('#donationTotal').textContent = money(donationSum);
     $('#expenseTotal').textContent = money(expenseSum);
 
+    // নতুন সদস্য আবেদন
     $('#applicationList').innerHTML = pending.length
       ? pending.map(u => `
         <div class="applicant">
           <span>${escapeHTML(u.phone || '')}</span>
           <span>
-            <button data-approve="${escapeHTML(u.id)}">অনুমোদন</button>
-            <button data-reject="${escapeHTML(u.id)}">বাতিল</button>
+            <button data-approve="${escapeHTML(u.id)}">
+              অনুমোদন
+            </button>
+            <button data-reject="${escapeHTML(u.id)}">
+              বাতিল
+            </button>
           </span>
-        </div>`).join('')
+        </div>
+      `).join('')
       : 'নতুন আবেদন নেই।';
 
     document.querySelectorAll('[data-approve]').forEach(button => {
@@ -1941,69 +1959,86 @@ async function refreshAdmin() {
         changeStatus(button.dataset.reject, 'rejected');
     });
 
+    // অনুমোদিত সদস্য তালিকা
+    $('#memberList').innerHTML = members.length
+      ? members.map(u => {
+          const memberId = String(u.id || '');
 
-$('#memberList').innerHTML = members.length
-  ? members.map(u => {
-      const photoURL =
-        typeof u.photoURL === 'string' &&
-        u.photoURL.startsWith('https://')
-          ? u.photoURL
-          : '/logo.png';
+          const photoURL =
+            typeof u.photoURL === 'string' &&
+            u.photoURL.startsWith('https://')
+              ? u.photoURL
+              : '/logo.png';
 
-      return `
-        <div class="noticeitem">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <img
-              src="${escapeHTML(photoURL)}"
-              alt="সদস্যের ছবি"
-              style="width:75px;height:75px;border-radius:50%;object-fit:cover;"
-            >
-            <div>
-              <b>${escapeHTML(u.fullName || u.name || 'নাম পাওয়া যায়নি')}</b>
-              <p>ফোন: ${escapeHTML(u.phone || 'নেই')}</p>
-              <p>ইমেইল: ${escapeHTML(u.email || 'নেই')}</p>
+          return `
+            <div class="noticeitem">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <img
+                  src="${escapeHTML(photoURL)}"
+                  alt="সদস্যের ছবি"
+                  style="width:75px;height:75px;border-radius:50%;object-fit:cover;"
+                >
+                <div>
+                  <b>${escapeHTML(u.fullName || u.name || 'নাম পাওয়া যায়নি')}</b>
+                  <p>ফোন: ${escapeHTML(u.phone || 'নেই')}</p>
+                  <p>ইমেইল: ${escapeHTML(u.email || 'নেই')}</p>
+                </div>
+              </div>
+
+              <p>ঠিকানা: ${escapeHTML(u.address || 'নেই')}</p>
+              <p>রক্তের গ্রুপ: ${escapeHTML(u.bloodGroup || 'নেই')}</p>
+              <p>পেশা: ${escapeHTML(u.occupation || 'নেই')}</p>
+              <p>সদস্য আইডি: ${escapeHTML(memberId.slice(0, 10).toUpperCase())}</p>
+              <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
+
+              <button
+                class="secondary"
+                data-deactivate="${escapeHTML(memberId)}"
+              >
+                সদস্য নিষ্ক্রিয় করুন
+              </button>
             </div>
-          </div>
+          `;
+        }).join('')
+      : 'কোনো অনুমোদিত সদস্য নেই।';
 
-          <p>ঠিকানা: ${escapeHTML(u.address || 'নেই')}</p>
-          <p>রক্তের গ্রুপ: ${escapeHTML(u.bloodGroup || 'নেই')}</p>
-          <p>পেশা: ${escapeHTML(u.occupation || 'নেই')}</p>
-          <p>সদস্য আইডি: ${escapeHTML(u.id.slice(0, 10).toUpperCase())}</p>
-          <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
+    // সদস্য নিষ্ক্রিয় করার বাটন
+    document.querySelectorAll('#memberList [data-deactivate]').forEach(button => {
+      button.onclick = async () => {
+        const id = button.dataset.deactivate;
 
-          <button class="secondary" data-deactivate="${escapeHTML(u.id)}">
-            সদস্য নিষ্ক্রিয় করুন
-          </button>
-        </div>
-      `;
-    }).join('')
-  : 'কোনো অনুমোদিত সদস্য নেই।';
+        if (!confirm('এই সদস্যকে নিষ্ক্রিয় করতে চান?')) {
+          return;
+        }
 
-$('#memberList').querySelectorAll('[data-deactivate]').forEach(button => {
-  button.onclick = async () => {
-    const id = button.dataset.deactivate;
+        button.disabled = true;
 
-    if (!confirm('এই সদস্যকে নিষ্ক্রিয় করতে চান?')) return;
+        try {
+          await updateDoc(doc(db, 'users', id), {
+            status: 'inactive'
+          });
 
-    try {
-      await updateDoc(doc(db, 'users', id), {
-        status: 'inactive'
-      });
+          button.closest('.noticeitem')?.remove();
 
-      button.closest('.noticeitem').remove();
-      alert('সদস্য নিষ্ক্রিয় করা হয়েছে।');
-    } catch (error) {
-      console.error(error);
-      alert('নিষ্ক্রিয় করা যায়নি: ' + error.message);
-    }
-  };
-});
+          alert('সদস্য নিষ্ক্রিয় করা হয়েছে।');
 
-   const options = members.map(u => `
+        } catch (error) {
+          console.error(error);
+
+          alert('নিষ্ক্রিয় করা যায়নি: ' + error.message);
+
+          button.disabled = false;
+        }
+      };
+    });
+
+    // চাঁদা ও পেমেন্টের সদস্য তালিকা
+    const options = members.map(u => `
       <option value="${escapeHTML(u.id)}"
         data-phone="${escapeHTML(u.phone || '')}">
         ${escapeHTML(u.phone || u.id)}
-      </option>`).join('');
+      </option>
+    `).join('');
 
     $('#dueMember').innerHTML =
       '<option value="">সদস্য নির্বাচন করুন</option>' + options;
@@ -2011,6 +2046,7 @@ $('#memberList').querySelectorAll('[data-deactivate]').forEach(button => {
     $('#payMember').innerHTML =
       '<option value="">সদস্য নির্বাচন করুন</option>' + options;
 
+    // আর্থিক হিসাব
     const paymentSum = payments.reduce(
       (s, x) => s + Number(x.amount || 0), 0
     );
@@ -2026,14 +2062,18 @@ $('#memberList').querySelectorAll('[data-deactivate]').forEach(button => {
       <p>মোট খরচ: <b>${money(expenseSum)}</b></p>
       <p>জমা ও অনুদান থেকে খরচ বাদে:
         <b>${money(paymentSum + donationSum - expenseSum)}</b>
-      </p>`;
+      </p>
+    `;
 
     $('#financeReport').innerHTML = report;
     $('#financeReport2').innerHTML = report;
 
+    // নিয়ম-কানুন
     renderAdminRules(rules);
 
-    const constitutionItems = await ensureDefaultConstitution(constitution);
+    // গঠনতন্ত্র
+    const constitutionItems =
+      await ensureDefaultConstitution(constitution);
 
     renderAdminConstitution(sortByOrder(constitutionItems));
 
@@ -2045,8 +2085,7 @@ $('#memberList').querySelectorAll('[data-deactivate]').forEach(button => {
     console.error(error);
     alert('অ্যাডমিন তথ্য লোড হয়নি। Firestore Rules পরীক্ষা করুন।');
   }
-}
-
+} 
 async function changeStatus(uid, status) {
   try {
     await updateDoc(doc(db, 'users', uid), { status });
