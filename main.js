@@ -1274,6 +1274,27 @@ async function memberView() {
           <div id="memberRules">লোড হচ্ছে...</div>
         </section>
       </div>
+      <div data-page="prayer" hidden>
+  <section class="panel">
+    <h2 class="heading-blue">🕌 নামাজের সময়সূচী</h2>
+
+    <p id="prayerLocation">আপনার লোকেশন শনাক্ত হচ্ছে...</p>
+
+    <div id="prayerTimes">
+      নামাজের সময়সূচী লোড হচ্ছে...
+    </div>
+
+    <p id="iftarTime"></p>
+
+    <button
+      type="button"
+      id="detectLocation"
+      class="btn"
+    >
+      লোকেশন শনাক্ত করুন
+    </button>
+  </section>
+</div>
 
       <div data-page="constitution" hidden>
         <section class="panel">
