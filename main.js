@@ -256,8 +256,15 @@ function loginView() {
   background:
     linear-gradient(
       to bottom,
-      rgba(0, 145, 125, .35),
-      rgba(0, 80, 75, .45)
+      rgba(0, 145, 125, .18),
+      rgba(0, 80, 75, .25)
+    ),
+    url('/village.jpg') center center / cover no-repeat;
+  opacity: .65;
+  filter: blur(1px);
+  transform: scale(1.02);
+  pointer-events: none;
+}
     ),
     url('/village.jpg') center center / cover no-repeat;
   opacity: .35;
