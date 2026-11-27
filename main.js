@@ -1680,16 +1680,42 @@ async function refreshAdmin() {
         changeStatus(button.dataset.reject, 'rejected');
     });
 
+
 $('#memberList').innerHTML = members.length
-  ? members.map(u => `
-    <div class="noticeitem">
-      <b>${escapeHTML(u.phone || '')}</b>
-      <p>সদস্য আইডি: ${escapeHTML(u.id.slice(0, 10).toUpperCase())}</p>
-      <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
-      <button class="secondary" data-deactivate="${escapeHTML(u.id)}">
-        সদস্য নিষ্ক্রিয় করুন
-      </button>
-    </div>`).join('')
+  ? members.map(u => {
+      const photoURL =
+        typeof u.photoURL === 'string' &&
+        u.photoURL.startsWith('https://')
+          ? u.photoURL
+          : '/logo.png';
+
+      return `
+        <div class="noticeitem">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img
+              src="${escapeHTML(photoURL)}"
+              alt="সদস্যের ছবি"
+              style="width:75px;height:75px;border-radius:50%;object-fit:cover;"
+            >
+            <div>
+              <b>${escapeHTML(u.fullName || u.name || 'নাম পাওয়া যায়নি')}</b>
+              <p>ফোন: ${escapeHTML(u.phone || 'নেই')}</p>
+              <p>ইমেইল: ${escapeHTML(u.email || 'নেই')}</p>
+            </div>
+          </div>
+
+          <p>ঠিকানা: ${escapeHTML(u.address || 'নেই')}</p>
+          <p>রক্তের গ্রুপ: ${escapeHTML(u.bloodGroup || 'নেই')}</p>
+          <p>পেশা: ${escapeHTML(u.occupation || 'নেই')}</p>
+          <p>সদস্য আইডি: ${escapeHTML(u.id.slice(0, 10).toUpperCase())}</p>
+          <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
+
+          <button class="secondary" data-deactivate="${escapeHTML(u.id)}">
+            সদস্য নিষ্ক্রিয় করুন
+          </button>
+        </div>
+      `;
+    }).join('')
   : 'কোনো অনুমোদিত সদস্য নেই।';
 
 $('#memberList').querySelectorAll('[data-deactivate]').forEach(button => {
@@ -1712,7 +1738,7 @@ $('#memberList').querySelectorAll('[data-deactivate]').forEach(button => {
   };
 });
 
-    const options = members.map(u => `
+   const options = members.map(u => `
       <option value="${escapeHTML(u.id)}"
         data-phone="${escapeHTML(u.phone || '')}">
         ${escapeHTML(u.phone || u.id)}
