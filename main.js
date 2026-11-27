@@ -2192,6 +2192,43 @@ async function adminView() {
         </section>
       </div>
 
+      <div data-page="idcards" hidden>
+  <section class="panel">
+    <h2>🪪 সদস্য আইডি কার্ড</h2>
+    <p>অনুমোদিত সদস্যদের আইডি কার্ড দেখুন ও প্রিন্ট করুন।</p>
+
+    <input
+      id="adminCardSearch"
+      type="search"
+      placeholder="সদস্যের নাম বা আইডি দিয়ে খুঁজুন"
+      style="width:100%;margin:12px 0"
+    >
+
+    <div id="adminCardList">
+      <p>সদস্য তালিকা লোড হচ্ছে...</p>
+    </div>
+  </section>
+
+  <section
+    id="adminCardPreview"
+    class="panel"
+    hidden
+    style="margin-top:16px"
+  >
+    <h3>সদস্য আইডি কার্ড</h3>
+
+    <div id="adminCardPreviewContent"></div>
+
+    <button
+      id="adminCardPrint"
+      class="primary"
+      style="margin-top:15px"
+    >
+      🖨️ আইডি কার্ড প্রিন্ট করুন
+    </button>
+  </section>
+</div>
+
       <div data-page="finance" hidden>
         <section class="panel">
           <h2 class="heading-green">মাসিক চাঁদা নির্ধারণ</h2>
