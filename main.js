@@ -1590,15 +1590,14 @@ function setupMemberIdCard() {
             <small>📅 যোগদানের তারিখ</small>
             <strong>${esc(joinDate)}</strong>
           </div>
-        </div>
-
+       
         <footer class="id-footer">
         সামাজিক উন্নয়ন, মানবকল্যাণ ও ঐক্যের জন্য আমরা একসাথে
         <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
       </footer>
     </div>
-
-    <button type="button" class="id-download" id="member-id-download">
+ 
+   <button type="button" class="id-download" id="member-id-download">
       ⬇ পরিচয়পত্র PDF ডাউনলোড করুন
     </button>
   `;
