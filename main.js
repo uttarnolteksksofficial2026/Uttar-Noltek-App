@@ -1167,244 +1167,534 @@ function renderPayments(payments) {
 
 /* MEMBER DASHBOARD */
 
+
 async function setupMemberIdCard(profile = {}) {
   const container = document.getElementById('memberIdCard');
   if (!container) return;
 
   const user = auth.currentUser;
   if (!user) {
-    container.innerHTML = '<p>সদস্যের তথ্য পাওয়া যায়নি।</p>';
+    container.textContent = 'সদস্যের তথ্য পাওয়া যায়নি।';
     return;
   }
 
+  const p = profile || {};
+
+  const dateValue = p.createdAt?.toDate
+    ? p.createdAt.toDate()
+    : p.createdAt
+      ? new Date(p.createdAt)
+      : null;
+
+  const joined = dateValue && !isNaN(dateValue.getTime())
+    ? dateValue.toLocaleDateString('bn-BD')
+    : 'তথ্য নেই';
+
   const member = {
-    name: profile.fullName || 'সদস্যের নাম',
-    photo: profile.photoURL || '',
-    phone: profile.phone || '',
-    address: profile.address || '',
-    blood: profile.bloodGroup || '',
-    occupation: profile.occupation || '',
-    id: profile.memberId || user.uid.slice(0, 8).toUpperCase(),
-    status: profile.status || 'pending',
-    joined: profile.createdAt?.toDate
-      ? profile.createdAt.toDate().toLocaleDateString('bn-BD')
-      : 'তথ্য নেই'
+    name: p.fullName || 'নাম পাওয়া যায়নি',
+    photo: p.photoURL || '/logo.png',
+    id: p.memberId || user.uid.slice(0, 8).toUpperCase(),
+    phone: p.phone || user.phoneNumber || 'তথ্য নেই',
+    blood: p.bloodGroup || 'তথ্য নেই',
+    occupation: p.occupation || 'তথ্য নেই',
+    address: p.address || 'তথ্য নেই',
+    joined,
+    status: p.status || 'pending'
   };
 
-  const qrUrl = 'https://uttar-noltek-app.vercel.app/?verify=' +
+  const verifyUrl =
+    'https://uttar-noltek-app.vercel.app/?verify=' +
     encodeURIComponent(user.uid);
 
-  const qrImage = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' +
-    encodeURIComponent(qrUrl);
+  const qrUrl =
+    'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' +
+    encodeURIComponent(verifyUrl);
 
-  const safe = value => String(value || 'তথ্য নেই')
-    .replace(/[&<>"']/g, c => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }[c]));
+  const safe = value => escapeHTML(value);
 
   container.innerHTML = `
     <style>
-      .member-id-card {
-        max-width: 390px;
-        margin: 18px auto;
-        padding: 7px;
-        border-radius: 19px;
-        background: linear-gradient(135deg,#b88a32,#f7e6a1,#997022);
-        box-shadow: 0 9px 28px #0005;
+      .un-card-wrap {
+        width: 100%;
+        max-width: 430px;
+        margin: 20px auto;
+        font-family: system-ui, sans-serif;
       }
-      .member-id-inner {
+
+      .un-card {
         position: relative;
         overflow: hidden;
-        border: 2px solid #d9b75c;
-        border-radius: 14px;
-        padding: 17px;
-        color: #fff;
-        background:
-          radial-gradient(circle at 90% 90%,#087653 0,transparent 42%),
-          linear-gradient(145deg,#071b43,#102e58 58%,#07553e);
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 590px;
+        padding: 9px;
+        border-radius: 23px;
+        background: linear-gradient(
+          135deg,#98701d,#ffe58b,#b98a28,#f8e7a5
+        );
+        box-shadow: 0 12px 30px #0004;
       }
-      .member-id-inner:before {
-        content: "উত্তর নলটেক";
+
+      .un-card-inner {
+        position: relative;
+        min-height: 570px;
+        box-sizing: border-box;
+        overflow: hidden;
+        border: 2px solid #f3d36c;
+        border-radius: 17px;
+        padding: 17px;
+        color: white;
+        background:
+          radial-gradient(ellipse at 50% 50%,
+            #174a78 0%,#071d42 72%);
+      }
+
+      .un-card-inner:before {
+        content: "";
         position: absolute;
-        top: 42%;
-        left: 4%;
-        font-size: 34px;
-        font-weight: 900;
-        color: #ffffff0b;
-        transform: rotate(-25deg);
+        inset: 7px;
+        border: 1px solid #d9b44c;
+        border-radius: 12px;
         pointer-events: none;
       }
-      .id-header {
-        text-align: center;
+
+      .un-card-inner:after {
+        content: "";
+        position: absolute;
+        width: 240px;
+        height: 240px;
+        left: 50%;
+        top: 45%;
+        transform: translate(-50%,-50%);
+        background: url('/logo.png') center/contain no-repeat;
+        opacity: .055;
+        pointer-events: none;
+      }
+
+      .un-card-content {
         position: relative;
-        border-bottom: 1px solid #d9b75c;
-        padding-bottom: 12px;
+        z-index: 1;
       }
-      .id-logo {
-        width: 65px;
-        height: 65px;
-        object-fit: contain;
-        border-radius: 50%;
-        background: white;
-        padding: 4px;
-        border: 2px solid #e4c66e;
-      }
-      .id-org {
-        color: #f4d887;
-        font-size: 18px;
-        font-weight: 900;
-        margin: 7px 0 3px;
-      }
-      .id-subtitle {
-        font-size: 11px;
-        color: #eee;
-      }
-      .id-ribbon {
-        display: inline-block;
-        margin-top: 9px;
-        padding: 5px 20px;
-        background: linear-gradient(90deg,#947025,#f5d77c,#947025);
-        color: #14233c;
-        font-weight: 900;
-        border-radius: 20px;
-        font-size: 13px;
-      }
-      .id-main {
+
+      .un-top {
         display: flex;
-        gap: 13px;
         align-items: center;
-        margin: 16px 0;
-        position: relative;
+        gap: 12px;
+        padding-bottom: 13px;
+        border-bottom: 3px solid #d9b44c;
       }
-      .id-photo {
-        width: 105px;
-        height: 125px;
-        object-fit: cover;
-        border: 3px solid #e4c66e;
-        border-radius: 10px;
-        background: #fff;
+
+      .un-logo {
+        width: 88px;
+        height: 88px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        object-fit: contain;
+        padding: 4px;
+        box-sizing: border-box;
+        background: white;
+        border: 4px solid #e7c35c;
       }
-      .id-name {
-        font-size: 17px;
+
+      .un-org {
+        flex: 1;
+        text-align: center;
+        font-size: 21px;
+        line-height: 1.45;
         font-weight: 900;
-        color: #ffe39a;
+        color: #fff;
+      }
+
+      .un-motto {
+        color: #ffdc64;
+        font-size: 12px;
+        text-align: center;
+        margin-top: 5px;
+      }
+
+      .un-ribbon {
+        text-align: center;
+        margin: 16px auto;
+        width: 85%;
+        padding: 10px 5px;
+        color: #152747;
+        font-weight: 900;
+        font-size: 18px;
+        background: linear-gradient(
+          90deg,#c08a21,#ffe78a,#bd8a20
+        );
+        border: 2px solid #fff0a5;
+        clip-path: polygon(
+          5% 0,95% 0,100% 50%,95% 100%,
+          5% 100%,0 50%
+        );
+      }
+
+      .un-front-main {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        margin: 12px 0 17px;
+      }
+
+      .un-photo-frame {
+        width: 42%;
+        flex-shrink: 0;
+        padding: 5px;
+        border-radius: 16px;
+        background: linear-gradient(
+          135deg,#ffe99a,#a97819,#f8d76d
+        );
+      }
+
+      .un-photo {
+        display: block;
+        width: 100%;
+        height: 165px;
+        object-fit: cover;
+        border-radius: 11px;
+        background: #078acb;
+      }
+
+      .un-number {
+        flex: 1;
+        text-align: center;
+        overflow-wrap: anywhere;
+      }
+
+      .un-number small {
+        display: block;
+        color: #ffdc64;
+        font-weight: bold;
         margin-bottom: 8px;
       }
-      .id-info {
-        font-size: 11px;
-        line-height: 1.9;
-        overflow-wrap: anywhere;
-      }
-      .id-info b { color: #f4d887; }
-      .id-details {
-        position: relative;
-        border-top: 1px solid #d9b75c;
-        padding-top: 10px;
-        font-size: 11px;
-        line-height: 1.9;
-        overflow-wrap: anywhere;
-      }
-      .id-bottom {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin-top: 13px;
-        border-top: 1px solid #d9b75c;
-        padding-top: 12px;
-        position: relative;
-      }
-      .id-qr {
-        width: 76px;
-        height: 76px;
-        background: white;
-        padding: 4px;
-        border-radius: 6px;
-      }
-      .id-status {
-        color: #ffe39a;
-        font-weight: 900;
-        font-size: 12px;
-      }
-      .id-footer {
-        text-align: center;
-        font-size: 10px;
-        color: #f5d887;
-        margin-top: 12px;
-      }
-      .id-print {
+
+      .un-number strong {
         display: block;
-        margin: 14px auto;
-        padding: 11px 25px;
-        border: 0;
-        border-radius: 9px;
-        background: #087653;
-        color: white;
+        border: 2px solid #f5cf4d;
+        border-radius: 12px;
+        padding: 9px 5px;
+        font-size: 15px;
+      }
+
+      .un-member-name {
+        color: #ffe28a;
+        font-size: 20px;
+        font-weight: 900;
+        text-align: center;
+        margin: 8px 0 12px;
+        overflow-wrap: anywhere;
+      }
+
+      .un-info {
+        display: grid;
+        grid-template-columns: 112px 10px 1fr;
+        gap: 5px;
+        font-size: 12px;
+        line-height: 1.9;
+        overflow-wrap: anywhere;
+      }
+
+      .un-info .colon {
+        color: #ffdf68;
         font-weight: bold;
       }
+
+      .un-info .value {
+        font-weight: 650;
+      }
+
+      .un-approved {
+        display: block;
+        width: 80%;
+        margin: 15px auto 5px;
+        padding: 9px;
+        border-radius: 30px;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 900;
+        background: linear-gradient(
+          90deg,#006b29,#10a94b,#006b29
+        );
+        border: 2px solid #8bff9c;
+      }
+
+      .un-bottom-design {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 48px;
+        background: linear-gradient(
+          165deg,transparent 0 35%,
+          #07572e 36%,#00944c 75%,#032b40 76%
+        );
+        border-top: 4px solid #e5c35d;
+        opacity: .95;
+      }
+
+      .un-back-title {
+        text-align: center;
+        color: #ffe28a;
+        font-size: 21px;
+        font-weight: 900;
+        margin: 18px 0;
+      }
+
+      .un-back-qr {
+        width: 195px;
+        height: 195px;
+        display: block;
+        margin: 15px auto 8px;
+        padding: 7px;
+        background: white;
+        border: 5px solid #e5c35d;
+        border-radius: 12px;
+        box-sizing: border-box;
+      }
+
+      .un-qr-text {
+        width: 85%;
+        margin: 10px auto 25px;
+        padding: 11px;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 900;
+        color: #132344;
+        background: linear-gradient(
+          90deg,#c08a21,#ffe78a,#bd8a20
+        );
+        border-radius: 12px;
+      }
+
+      .un-address {
+        margin-top: 18px;
+        padding: 15px 12px;
+        text-align: center;
+        border: 2px solid #e5c35d;
+        border-radius: 13px;
+        font-size: 14px;
+        line-height: 1.9;
+        overflow-wrap: anywhere;
+      }
+
+      .un-address-title {
+        display: block;
+        color: #ffe28a;
+        font-size: 17px;
+        font-weight: 900;
+        margin-bottom: 8px;
+      }
+
+      .un-back-status {
+        text-align: center;
+        margin: 17px auto;
+        padding: 12px 5px;
+        border: 2px solid #3be47d;
+        border-radius: 25px;
+        background: #006b36;
+        font-weight: 900;
+        font-size: 15px;
+      }
+
+      .un-back-footer {
+        text-align: center;
+        font-size: 13px;
+        line-height: 1.8;
+        color: #ffe28a;
+        margin-top: 18px;
+      }
+
+      .un-card-actions {
+        display: flex;
+        gap: 10px;
+        margin: 15px 0 25px;
+      }
+
+      .un-card-actions button {
+        flex: 1;
+        padding: 12px 5px;
+        border: 0;
+        border-radius: 10px;
+        color: white;
+        background: #087653;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
       @media print {
-        body * { visibility: hidden; }
-        #memberIdCard, #memberIdCard * { visibility: visible; }
+        @page {
+          size: A4;
+          margin: 10mm;
+        }
+
+        body * {
+          visibility: hidden !important;
+        }
+
+        #memberIdCard,
+        #memberIdCard * {
+          visibility: visible !important;
+        }
+
         #memberIdCard {
           position: absolute;
           left: 0;
           top: 0;
           width: 100%;
         }
-        .id-print { display: none !important; }
+
+        .un-card-wrap {
+          max-width: 390px;
+          margin: auto;
+        }
+
+        .un-card {
+          break-inside: avoid;
+          page-break-inside: avoid;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .un-card-actions {
+          display: none !important;
+        }
       }
     </style>
 
-    <div class="member-id-card">
-      <div class="member-id-inner">
-        <div class="id-header">
-          <img class="id-logo" src="/logo.png" alt="সংগঠনের লোগো">
-          <div class="id-org">উত্তর নলটেক সমাজ কল্যাণ সংগঠন</div>
-          <div class="id-subtitle">একতাই শক্তি • মানবতার সেবায় আমরা</div>
-          <div class="id-ribbon">ডিজিটাল সদস্য পরিচয়পত্র</div>
-        </div>
+    <div class="un-card-wrap">
 
-        <div class="id-main">
-          <img class="id-photo"
-            src="${safe(member.photo || '/logo.png')}"
-            alt="সদস্যের ছবি">
-          <div class="id-info">
-            <div class="id-name">${safe(member.name)}</div>
-            <div><b>সদস্য আইডি:</b> ${safe(member.id)}</div>
-            <div><b>মোবাইল:</b> ${safe(member.phone)}</div>
-            <div><b>রক্তের গ্রুপ:</b> ${safe(member.blood)}</div>
-            <div><b>পেশা:</b> ${safe(member.occupation)}</div>
-          </div>
-        </div>
+      <!-- সামনের পাশ -->
+      <div class="un-card">
+        <div class="un-card-inner">
+          <div class="un-card-content">
 
-        <div class="id-details">
-          <div><b>ঠিকানা:</b> ${safe(member.address)}</div>
-          <div><b>যোগদানের তারিখ:</b> ${safe(member.joined)}</div>
-        </div>
-
-        <div class="id-bottom">
-          <div>
-            <div class="id-status">
-              ${member.status === 'approved' ? '✓ অনুমোদিত সদস্য' : 'অনুমোদন অপেক্ষমাণ'}
+            <div class="un-top">
+              <img class="un-logo" src="/logo.png">
+              <div>
+                <div class="un-org">
+                  উত্তর নলটেক<br>সমাজ কল্যাণ সংগঠন
+                </div>
+                <div class="un-motto">
+                  সেবা • সংহতি • উন্নয়ন
+                </div>
+              </div>
             </div>
-            <div class="id-info">QR স্ক্যান করে সদস্য যাচাই করুন</div>
-          </div>
-          <img class="id-qr" src="${qrImage}" alt="QR Code">
-        </div>
 
-        <div class="id-footer">
-          মানবতার সেবায় • ঐক্য • সহযোগিতা • কল্যাণ
+            <div class="un-ribbon">
+              সদস্য পরিচয়পত্র
+            </div>
+
+            <div class="un-front-main">
+              <div class="un-photo-frame">
+                <img class="un-photo"
+                  src="${safe(member.photo)}"
+                  onerror="this.src='/logo.png'"
+                  alt="সদস্যের ছবি">
+              </div>
+
+              <div class="un-number">
+                <small>সদস্য নং</small>
+                <strong>${safe(member.id)}</strong>
+              </div>
+            </div>
+
+            <div class="un-member-name">
+              ${safe(member.name)}
+            </div>
+
+            <div class="un-info">
+              <span>রক্তের গ্রুপ</span>
+              <span class="colon">:</span>
+              <span class="value">${safe(member.blood)}</span>
+
+              <span>পেশা</span>
+              <span class="colon">:</span>
+              <span class="value">${safe(member.occupation)}</span>
+
+              <span>ঠিকানা</span>
+              <span class="colon">:</span>
+              <span class="value">${safe(member.address)}</span>
+
+              <span>মোবাইল</span>
+              <span class="colon">:</span>
+              <span class="value">${safe(member.phone)}</span>
+
+              <span>যোগদানের তারিখ</span>
+              <span class="colon">:</span>
+              <span class="value">${safe(member.joined)}</span>
+            </div>
+
+            <div class="un-approved">
+              ${member.status === 'approved'
+                ? '✓ অনুমোদিত সদস্য'
+                : 'অনুমোদন অপেক্ষমাণ'}
+            </div>
+
+          </div>
+          <div class="un-bottom-design"></div>
         </div>
       </div>
-    </div>
 
-    <button class="id-print" onclick="window.print()">
-      পরিচয়পত্র প্রিন্ট করুন
-    </button>
+      <!-- পেছনের পাশ -->
+      <div class="un-card" style="margin-top:18px">
+        <div class="un-card-inner">
+          <div class="un-card-content">
+
+            <div class="un-top">
+              <img class="un-logo" src="/logo.png">
+              <div>
+                <div class="un-org">
+                  উত্তর নলটেক<br>সমাজ কল্যাণ সংগঠন
+                </div>
+                <div class="un-motto">
+                  একতা, মানবতা ও কল্যাণের জন্য
+                </div>
+              </div>
+            </div>
+
+            <div class="un-back-title">
+              সদস্য পরিচয় যাচাই
+            </div>
+
+            <img class="un-back-qr"
+              src="${qrUrl}"
+              alt="সদস্য যাচাইকরণ QR কোড">
+
+            <div class="un-qr-text">
+              QR কোড স্ক্যান করে<br>
+              সদস্যের তথ্য যাচাই করুন
+            </div>
+
+            <div class="un-address">
+              <span class="un-address-title">
+                সদস্যের ঠিকানা
+              </span>
+              📍 ${safe(member.address)}
+            </div>
+
+            <div class="un-back-status">
+              ✓ সদস্যের অবস্থা :
+              ${member.status === 'approved' ? 'সক্রিয়' : 'অপেক্ষমাণ'}
+            </div>
+
+            <div class="un-back-footer">
+              “সবার পাশে, সর্বসময়<br>
+              উত্তর নলটেক সমাজ কল্যাণ সংগঠন”
+            </div>
+
+          </div>
+          <div class="un-bottom-design"></div>
+        </div>
+      </div>
+
+      <div class="un-card-actions">
+        <button type="button" onclick="window.print()">
+          🖨️ কার্ড প্রিন্ট করুন
+        </button>
+      </div>
+
+    </div>
   `;
 }
   
@@ -1938,7 +2228,7 @@ async function memberView() {
   $('#detectLocation').onclick = detectPrayerLocation;
 console.log('ID CARD FUNCTION STARTED');
 try {
-  await setupMemberIdCard();
+  await setupMemberIdCard(profile);
 } catch (error) {
   console.error('MEMBER ID CARD ERROR:', error);
   $('#memberIdCard').innerHTML =
