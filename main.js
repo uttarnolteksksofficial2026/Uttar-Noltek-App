@@ -222,6 +222,7 @@ function contactHTML() {
 
 /* LOGIN */
 
+   
 function loginView() {
   app.innerHTML = `
     <header class="app-header">
@@ -253,70 +254,90 @@ function loginView() {
       </div>
 
       <section class="panel">
-        <h2 class="heading-blue">সদস্য লগইন</h2>
-        <p class="hint">আগে অ্যাকাউন্ট থাকলে লগইন করুন।</p>
+        <h2 class="heading-blue">সদস্য প্রবেশ</h2>
+        <p class="hint">আপনার পছন্দের অপশনটি নির্বাচন করুন।</p>
 
-        <label for="email">Gmail / ইমেইল</label>
-        <input id="email" type="email"
-          autocomplete="email"
-          placeholder="আপনার ইমেইল লিখুন">
-
-        <label for="password">পাসওয়ার্ড</label>
-        <input id="password" type="password"
-          autocomplete="current-password"
-          placeholder="পাসওয়ার্ড লিখুন">
-
-        <button class="primary" id="sendOtp" type="button">
-          লগইন করুন
+        <button class="primary" id="showLogin" type="button">
+          লগইন
         </button>
 
-        <button class="secondary" id="verifyOtp" type="button">
-          পাসওয়ার্ড ভুলে গেছেন?
+        <button class="secondary" id="showRegister" type="button">
+          নতুন সদস্য রেজিস্ট্রেশন
         </button>
 
-        <hr>
+        <div id="authCredentials" hidden>
+          <hr>
 
-        <h2 class="heading-blue">নতুন সদস্য নিবন্ধন</h2>
-        <p class="hint">সদস্য হতে নিচের তথ্যগুলো পূরণ করুন।</p>
+          <label for="email">Gmail / ইমেইল</label>
+          <input id="email" type="email"
+            autocomplete="email"
+            placeholder="আপনার ইমেইল লিখুন">
 
-        <label for="fullName">পূর্ণ নাম *</label>
-        <input id="fullName" type="text"
-          autocomplete="name"
-          placeholder="আপনার সম্পূর্ণ নাম">
+          <label for="password">পাসওয়ার্ড</label>
+          <input id="password" type="password"
+            autocomplete="current-password"
+            placeholder="পাসওয়ার্ড লিখুন">
+        </div>
 
-        <label for="memberPhone">মোবাইল নম্বর *</label>
-        <input id="memberPhone" type="tel"
-          autocomplete="tel"
-          placeholder="মোবাইল নম্বর লিখুন">
+        <div id="loginActions" hidden>
+          <button class="primary" id="sendOtp" type="button">
+            লগইন করুন
+          </button>
 
-        <label for="memberAddress">পূর্ণ ঠিকানা *</label>
-        <textarea id="memberAddress" rows="3"
-          placeholder="গ্রাম, ইউনিয়ন, উপজেলা, জেলা"></textarea>
+          <button class="secondary" id="verifyOtp" type="button">
+            পাসওয়ার্ড ভুলে গেছেন?
+          </button>
+        </div>
 
-        <label for="bloodGroup">রক্তের গ্রুপ *</label>
-        <select id="bloodGroup">
-          <option value="">রক্তের গ্রুপ নির্বাচন করুন</option>
-          <option value="A+">A+</option>
-          <option value="A-">A-</option>
-          <option value="B+">B+</option>
-          <option value="B-">B-</option>
-          <option value="AB+">AB+</option>
-          <option value="AB-">AB-</option>
-          <option value="O+">O+</option>
-          <option value="O-">O-</option>
-          <option value="জানা নেই">জানা নেই</option>
-        </select>
+        <div id="registrationFields" hidden>
+          <hr>
 
-        <label for="memberOccupation">পেশা (ঐচ্ছিক)</label>
-        <input id="memberOccupation" type="text"
-          placeholder="আপনার পেশা">
+          <h2 class="heading-blue">নতুন সদস্য নিবন্ধন</h2>
+          <p class="hint">সদস্য হতে নিচের তথ্যগুলো পূরণ করুন।</p>
 
-        <p class="hint">
-          নিবন্ধনের জন্য উপরের Gmail ও পাসওয়ার্ডের ঘরও পূরণ করতে হবে।
-        </p>
+          <label for="fullName">পূর্ণ নাম *</label>
+          <input id="fullName" type="text"
+            autocomplete="name"
+            placeholder="আপনার সম্পূর্ণ নাম">
 
-        <button class="primary" id="registerMember" type="button">
-          নতুন সদস্য অ্যাকাউন্ট খুলুন
+          <label for="memberPhone">মোবাইল নম্বর *</label>
+          <input id="memberPhone" type="tel"
+            autocomplete="tel"
+            placeholder="মোবাইল নম্বর লিখুন">
+
+          <label for="memberAddress">পূর্ণ ঠিকানা *</label>
+          <textarea id="memberAddress" rows="3"
+            placeholder="গ্রাম, ইউনিয়ন, উপজেলা, জেলা"></textarea>
+
+          <label for="bloodGroup">রক্তের গ্রুপ *</label>
+          <select id="bloodGroup">
+            <option value="">রক্তের গ্রুপ নির্বাচন করুন</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+            <option value="জানা নেই">জানা নেই</option>
+          </select>
+
+          <label for="memberOccupation">পেশা (ঐচ্ছিক)</label>
+          <input id="memberOccupation" type="text"
+            placeholder="আপনার পেশা">
+
+          <p class="hint">
+            নিবন্ধনের জন্য Gmail ও পাসওয়ার্ডের ঘরও পূরণ করতে হবে।
+          </p>
+
+          <button class="primary" id="registerMember" type="button">
+            নতুন সদস্য অ্যাকাউন্ট খুলুন
+          </button>
+        </div>
+
+        <button class="secondary" id="backToChoices" type="button" hidden>
+          ফিরে যান
         </button>
 
         <p class="hint" id="message" role="status" aria-live="polite"></p>
@@ -328,52 +349,42 @@ function loginView() {
     ${footer()}
   `;
 
+  const credentials = $('#authCredentials');
+  const loginActions = $('#loginActions');
+  const registrationFields = $('#registrationFields');
+  const backButton = $('#backToChoices');
+  const message = $('#message');
+
+  function showChoice(type) {
+    credentials.hidden = false;
+    backButton.hidden = false;
+    message.textContent = '';
+
+    if (type === 'login') {
+      loginActions.hidden = false;
+      registrationFields.hidden = true;
+    } else {
+      loginActions.hidden = true;
+      registrationFields.hidden = false;
+    }
+  }
+
+  $('#showLogin').onclick = () => showChoice('login');
+  $('#showRegister').onclick = () => showChoice('register');
+
+  backButton.onclick = () => {
+    credentials.hidden = true;
+    loginActions.hidden = true;
+    registrationFields.hidden = true;
+    backButton.hidden = true;
+    message.textContent = '';
+  };
+
   $('#sendOtp').onclick = sendOtp;
   $('#registerMember').onclick = registerMember;
   $('#verifyOtp').onclick = verifyOtp;
 }
-async function sendOtp() {
-  const message = $('#message');
-  const button = $('#sendOtp');
-
-  const email = $('#email').value.trim();
-  const password = $('#password').value;
-
-  if (!email || !password) {
-    message.textContent = 'ইমেইল ও পাসওয়ার্ড লিখুন।';
-    return;
-  }
-
-  button.disabled = true;
-  message.textContent = 'লগইন করা হচ্ছে...';
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    message.textContent = 'লগইন সফল হয়েছে।';
-
-    // onAuthStateChanged স্বয়ংক্রিয়ভাবে সদস্যের পেজ খুলবে
-  } catch (error) {
-    console.error('EMAIL LOGIN ERROR:', error);
-
-    const errors = {
-      'auth/invalid-email': 'সঠিক ইমেইল লিখুন।',
-      'auth/invalid-credential': 'ইমেইল অথবা পাসওয়ার্ড ভুল।',
-      'auth/user-not-found': 'এই ইমেইলে কোনো অ্যাকাউন্ট নেই।',
-      'auth/wrong-password': 'পাসওয়ার্ড ভুল হয়েছে।',
-      'auth/too-many-requests': 'অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।',
-      'auth/network-request-failed': 'ইন্টারনেট সংযোগ পরীক্ষা করুন।',
-      'auth/operation-not-allowed': 'Firebase-এ Email/Password চালু নেই।'
-    };
-
-    message.textContent =
-      errors[error.code] ||
-      error.message ||
-      'লগইন করা যায়নি।';
-  } finally {
-    button.disabled = false;
-  }
-}
-        
+             
 async function verifyOtp() {
   const message = $('#message');
   const button = $('#verifyOtp');
