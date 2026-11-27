@@ -1166,7 +1166,6 @@ function renderPayments(payments) {
 }
 
 /* MEMBER DASHBOARD */
-
 function setupMemberIdCard() {
   const homePage = document.querySelector('[data-page="home"]');
 
@@ -1309,6 +1308,7 @@ function setupMemberIdCard() {
     printWindow.document.close();
   };
 }
+
 
 async function memberView() {
   const menuItems = [
@@ -1595,8 +1595,9 @@ async function memberView() {
 
   bindLogout();
   setupNavigation();
-  setupMemberIdCard();
-   
+setupMemberIdCard();
+
+  
   // নামাজের সময়সূচী
 async function loadPrayerTimes(lat, lon) {
   const prayerLocation = $('#prayerLocation');
