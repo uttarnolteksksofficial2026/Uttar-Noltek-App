@@ -1167,8 +1167,10 @@ function renderPayments(payments) {
 
 /* MEMBER DASHBOARD */
 
-
 function setupMemberIdCard() {
+  const oldCard = document.getElementById('member-id-card');
+  if (oldCard) oldCard.remove();
+
   if (!currentUser || !profile) return;
 
   const headings = [...document.querySelectorAll('h2')];
@@ -1179,405 +1181,404 @@ function setupMemberIdCard() {
 
   if (!profilePanel) return;
 
-  document.querySelector('#memberIdCardPanel')?.remove();
+  const esc = value => String(value || 'তথ্য নেই')
+    .replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[ch]));
 
-  const memberId = currentUser.uid.slice(0, 10).toUpperCase();
-
-  const photoURL =
-    typeof profile.photoURL === 'string' &&
-    profile.photoURL.startsWith('https://')
-      ? profile.photoURL
-      : '/logo.png';
-
-  const name = escapeHTML(profile.fullName || 'নাম পাওয়া যায়নি');
-  const phone = escapeHTML(profile.phone || 'তথ্য নেই');
-  const address = escapeHTML(profile.address || 'তথ্য নেই');
-  const blood = escapeHTML(profile.bloodGroup || 'তথ্য নেই');
-  const occupation = escapeHTML(profile.occupation || 'তথ্য নেই');
+  const name = profile.fullName || profile.name || 'সদস্যের নাম';
+  const memberId = profile.memberId || currentUser.uid;
+  const phone = profile.phone || currentUser.phoneNumber || 'তথ্য নেই';
+  const address = profile.address || 'তথ্য নেই';
+  const blood = profile.bloodGroup || 'তথ্য নেই';
+  const occupation = profile.occupation || 'তথ্য নেই';
 
   let joinDate = 'তথ্য নেই';
+  if (profile.createdAt) {
+    const date = profile.createdAt.toDate
+      ? profile.createdAt.toDate()
+      : new Date(profile.createdAt);
 
-  try {
-    const createdAt = profile.createdAt;
-    const date = createdAt?.toDate
-      ? createdAt.toDate()
-      : createdAt?.seconds
-        ? new Date(createdAt.seconds * 1000)
-        : createdAt
-          ? new Date(createdAt)
-          : null;
-
-    if (date && !isNaN(date.getTime())) {
+    if (!isNaN(date.getTime())) {
       joinDate = date.toLocaleDateString('bn-BD', {
         day: '2-digit',
-        month: 'long',
+        month: '2-digit',
         year: 'numeric'
       });
     }
-  } catch (error) {
-    console.error('JOIN DATE ERROR:', error);
   }
 
+  const photo = profile.photoURL || profile.photoUrl || '';
+
+  const card = document.createElement('section');
+  card.id = 'member-id-card';
+  card.innerHTML = `
+    <style>
+      #member-id-card {
+        max-width: 760px;
+        margin: 22px auto;
+        font-family: system-ui, sans-serif;
+        color: #064c25;
+      }
+
+      #member-id-card .id-card {
+        position: relative;
+        overflow: hidden;
+        background: #fff;
+        border: 4px solid #d9aa32;
+        border-radius: 28px;
+        box-shadow: 0 8px 25px #0002;
+      }
+
+      #member-id-card .id-top {
+        position: relative;
+        padding: 20px 14px 32px;
+        text-align: center;
+        color: white;
+        background:
+          linear-gradient(135deg, transparent 0 18%, #ffffff12 18% 25%, transparent 25%),
+          linear-gradient(145deg, #003d1c, #00833b 55%, #005122);
+        clip-path: polygon(0 0,100% 0,100% 83%,70% 100%,0 84%);
+      }
+
+      #member-id-card .id-top:after {
+        content: "";
+        position: absolute;
+        left: -10%;
+        right: -10%;
+        bottom: 12px;
+        height: 12px;
+        background: linear-gradient(90deg,#ffe98b,#c48b19,#fff1a8);
+        transform: rotate(-3deg);
+      }
+
+      #member-id-card .id-logo {
+        width: 76px;
+        height: 76px;
+        object-fit: contain;
+        border-radius: 50%;
+        background: white;
+        border: 4px solid #e8c45a;
+        padding: 3px;
+      }
+
+      #member-id-card .id-org {
+        font-size: clamp(17px, 4vw, 27px);
+        font-weight: 900;
+        margin: 8px 0 3px;
+        line-height: 1.35;
+      }
+
+      #member-id-card .id-motto {
+        font-size: 13px;
+        opacity: .95;
+      }
+
+      #member-id-card .id-ribbon {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 8px 25px;
+        color: #064c25;
+        background: linear-gradient(90deg,#e8b83b,#fff0a2,#dba52a);
+        border: 2px solid #fff1a6;
+        border-radius: 10px 22px 10px 22px;
+        font-size: 19px;
+        font-weight: 900;
+        transform: skew(-5deg);
+      }
+
+      #member-id-card .id-content {
+        display: grid;
+        grid-template-columns: minmax(115px, 34%) 1fr;
+        gap: 13px;
+        padding: 8px 14px 18px;
+      }
+
+      #member-id-card .id-left {
+        min-width: 0;
+        text-align: center;
+      }
+
+      #member-id-card .id-photo-frame {
+        padding: 6px;
+        border: 3px solid #d5a72d;
+        border-radius: 22px;
+        background: linear-gradient(135deg,#087b35,#fff1a2,#087b35);
+      }
+
+      #member-id-card .id-photo {
+        display: block;
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        object-fit: cover;
+        border-radius: 16px;
+        background: #e8f3e8;
+      }
+
+      #member-id-card .id-status {
+        margin-top: 8px;
+        padding: 7px 4px;
+        border-radius: 25px;
+        color: white;
+        font-size: 12px;
+        font-weight: 800;
+        background: linear-gradient(120deg,#00652a,#009344);
+        border: 2px solid #e8c34b;
+      }
+
+      #member-id-card .id-qr-box {
+        margin: 10px auto 0;
+        padding: 7px;
+        max-width: 145px;
+        background: white;
+        border: 3px solid #d7a72c;
+        border-radius: 15px;
+      }
+
+      #member-id-card #member-id-qr {
+        width: 100%;
+        min-height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #member-id-card #member-id-qr img,
+      #member-id-card #member-id-qr canvas {
+        max-width: 100%;
+        height: auto;
+      }
+
+      #member-id-card .id-scan {
+        font-size: 10px;
+        font-weight: 700;
+        margin-top: 5px;
+      }
+
+      #member-id-card .id-right {
+        min-width: 0;
+      }
+
+      #member-id-card .id-name {
+        font-size: clamp(19px, 4.4vw, 30px);
+        font-weight: 900;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        margin: 2px 0 8px;
+      }
+
+      #member-id-card .id-number {
+        padding: 8px 10px;
+        color: white;
+        background: linear-gradient(110deg,#00451e,#00843b);
+        border: 2px solid #d9b13b;
+        border-radius: 18px 8px 18px 8px;
+        font-weight: 800;
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+
+      #member-id-card .id-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 8px;
+        padding: 8px;
+        background: linear-gradient(110deg,#e9f4e5,#f8fff5);
+        border-radius: 13px 20px 13px 20px;
+        font-size: 12px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      #member-id-card .id-row strong {
+        color: #064c25;
+        flex-shrink: 0;
+      }
+
+      #member-id-card .id-date {
+        margin: 0 14px 18px;
+        padding: 12px 10px;
+        text-align: center;
+        border: 3px solid #d9aa32;
+        border-radius: 22px 8px 22px 8px;
+        background: linear-gradient(110deg,#fff0a7,#fffdf0,#ffe28a);
+        font-weight: 900;
+        color: #07552a;
+      }
+
+      #member-id-card .id-date small {
+        display: block;
+        color: #4e3b06;
+        font-size: 13px;
+      }
+
+      #member-id-card .id-date span {
+        display: block;
+        font-size: 21px;
+        margin-top: 4px;
+      }
+
+      #member-id-card .id-footer {
+        padding: 15px 12px;
+        text-align: center;
+        color: white;
+        background: linear-gradient(135deg,#003d1c,#007c37);
+        border-top: 5px solid #d9aa32;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      #member-id-card .id-footer b {
+        display: block;
+        color: #ffe77a;
+        margin-top: 4px;
+      }
+
+      #member-id-card .id-download {
+        width: 100%;
+        margin-top: 15px;
+        padding: 14px;
+        border: 2px solid #d8b03e;
+        border-radius: 35px;
+        color: white;
+        background: linear-gradient(110deg,#008c3c,#005326);
+        font-size: 17px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 5px 12px #0002;
+      }
+
+      @media (max-width: 390px) {
+        #member-id-card .id-content {
+          grid-template-columns: 32% 1fr;
+          gap: 9px;
+          padding-left: 9px;
+          padding-right: 9px;
+        }
+
+        #member-id-card .id-row {
+          font-size: 11px;
+          padding: 6px;
+        }
+      }
+
+      @media print {
+        body * { visibility: hidden !important; }
+        #member-id-card,
+        #member-id-card * { visibility: visible !important; }
+        #member-id-card {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          max-width: none;
+          margin: 0;
+        }
+        #member-id-card .id-download { display: none !important; }
+        #member-id-card .id-card {
+          box-shadow: none;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+
+    <div class="id-card">
+      <header class="id-top">
+        <img class="id-logo" src="/logo.png" alt="সংগঠনের লোগো">
+        <div class="id-org">উত্তর নলটেক সমাজ কল্যাণ সংগঠন</div>
+        <div class="id-motto">একতাই শক্তি · Unity is Strength</div>
+        <div class="id-ribbon">★ সদস্য পরিচয়পত্র ★</div>
+      </header>
+
+      <div class="id-content">
+        <div class="id-left">
+          <div class="id-photo-frame">
+            ${
+              photo
+                ? `<img class="id-photo" src="${esc(photo)}" alt="সদস্যের ছবি">`
+                : `<div class="id-photo" style="display:flex;align-items:center;justify-content:center;font-size:12px">ছবি নেই</div>`
+            }
+          </div>
+
+          <div class="id-status">অনুমোদিত সদস্য</div>
+
+          <div class="id-qr-box">
+            <div id="member-id-qr"></div>
+          </div>
+          <div class="id-scan">স্ক্যান করে সদস্য যাচাই করুন</div>
+        </div>
+
+        <div class="id-right">
+          <div class="id-name">${esc(name)}</div>
+          <div class="id-number">সদস্য আইডি: ${esc(memberId)}</div>
+
+          <div class="id-row"><strong>মোবাইল:</strong> ${esc(phone)}</div>
+          <div class="id-row"><strong>রক্তের গ্রুপ:</strong> ${esc(blood)}</div>
+          <div class="id-row"><strong>ঠিকানা:</strong> ${esc(address)}</div>
+          <div class="id-row"><strong>পেশা:</strong> ${esc(occupation)}</div>
+          <div class="id-row"><strong>সদস্যপদ:</strong> অনুমোদিত</div>
+        </div>
+      </div>
+
+      <div class="id-date">
+        <small>📅 যোগদানের তারিখ</small>
+        <span>${esc(joinDate)}</span>
+      </div>
+
+      <footer class="id-footer">
+        সামাজিক উন্নয়ন, মানবকল্যাণ ও ঐক্যের জন্য আমরা একসাথে
+        <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
+      </footer>
+    </div>
+
+    <button type="button" class="id-download" id="member-id-download">
+      ⬇ পরিচয়পত্র PDF ডাউনলোড করুন
+    </button>
+  `;
+
+  profilePanel.insertAdjacentElement('afterend', card);
+
+  card.querySelector('#member-id-download').addEventListener('click', () => {
+    window.print();
+  });
+
+  const qrBox = card.querySelector('#member-id-qr');
   const verifyURL =
     'https://uttar-noltek-app.vercel.app/?verify=' +
     encodeURIComponent(currentUser.uid);
 
-  const styles = `
-    .smart-id-card {
-      width:100%;
-      max-width:760px;
-      margin:18px auto;
-      overflow:hidden;
-      border:4px solid #c8a13d;
-      border-radius:24px;
-      background:#fff;
-      color:#064b35;
-      box-shadow:0 12px 30px rgba(0,50,30,.18);
-      font-family:system-ui,sans-serif;
+  function makeQR() {
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(qrBox, {
+        text: verifyURL,
+        width: 130,
+        height: 130,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      qrBox.textContent = 'QR তৈরি হয়নি';
     }
-    .smart-id-card * { box-sizing:border-box; }
-
-    .smart-id-header {
-      padding:25px 18px 30px;
-      text-align:center;
-      color:#fff !important;
-      background:linear-gradient(135deg,#03452f,#087a50);
-      border-bottom:9px solid #d8b44b;
-    }
-    .smart-id-header h2 {
-      margin:12px 0;
-      color:#fff !important;
-      font-size:clamp(22px,5vw,34px);
-      font-weight:900;
-      line-height:1.4;
-    }
-    .smart-id-header p {
-      margin:8px 0;
-      color:#fff !important;
-      font-size:15px;
-    }
-    .smart-id-logo {
-      width:82px;
-      height:82px;
-      object-fit:contain;
-      border-radius:50%;
-      background:#fff;
-      border:4px solid #e5c36b;
-      padding:3px;
-    }
-    .smart-id-ribbon {
-      display:inline-block;
-      margin-top:15px;
-      padding:10px 28px;
-      border-radius:35px;
-      background:#e8c65e;
-      color:#064b35 !important;
-      font-size:20px;
-      font-weight:900;
-    }
-
-    .smart-id-body {
-      display:grid;
-      grid-template-columns:220px minmax(0,1fr);
-      gap:22px;
-      padding:22px;
-      background:#fff;
-    }
-    .smart-id-photo {
-      width:100%;
-      height:245px;
-      object-fit:cover;
-      border:6px solid #08734d;
-      border-radius:18px;
-      background:#e8f5ed;
-      padding:3px;
-    }
-    .smart-id-member-name {
-      margin:0 0 12px;
-      color:#064b35 !important;
-      font-size:clamp(22px,5vw,30px);
-      font-weight:900;
-      line-height:1.4;
-      overflow-wrap:anywhere;
-    }
-    .smart-id-number {
-      margin:10px 0 14px;
-      padding:10px 12px;
-      border-radius:14px;
-      background:#e5f4d2;
-      color:#064b35 !important;
-      font-size:15px;
-      font-weight:900;
-      overflow-wrap:anywhere;
-    }
-    .smart-id-status {
-      display:inline-block;
-      padding:8px 18px;
-      border-radius:30px;
-      background:#075b3c;
-      color:#fff !important;
-      font-size:14px;
-      font-weight:900;
-    }
-    .smart-id-details {
-      margin-top:15px;
-      border-top:1px solid #dce7df;
-    }
-    .smart-id-row {
-      padding:11px 2px;
-      border-bottom:1px solid #e2e9e4;
-      color:#153f30 !important;
-      font-size:15px;
-      line-height:1.6;
-      overflow-wrap:anywhere;
-    }
-    .smart-id-row strong {
-      color:#075b3c !important;
-    }
-    .smart-id-qr-area {
-      margin-top:16px;
-      padding:12px;
-      border:2px solid #08734d;
-      border-radius:15px;
-      text-align:center;
-      background:#fff;
-    }
-    .smart-id-qr-area img {
-      max-width:100%;
-    }
-    .smart-id-qr-label {
-      margin:8px 0 0;
-      color:#075b3c !important;
-      font-size:13px;
-      font-weight:900;
-    }
-    .smart-id-footer {
-      padding:18px;
-      text-align:center;
-      color:#fff !important;
-      background:#064b35;
-      font-size:14px;
-      font-weight:800;
-      line-height:1.7;
-    }
-    .smart-id-download {
-      width:100%;
-      margin-top:15px;
-      padding:17px;
-      border:0;
-      border-radius:16px;
-      background:linear-gradient(100deg,#076b47,#0c9c70);
-      color:#fff !important;
-      font-size:18px;
-      font-weight:900;
-    }
-
-    @media(max-width:520px) {
-      .smart-id-body {
-        grid-template-columns:110px minmax(0,1fr);
-        gap:12px;
-        padding:12px;
-      }
-      .smart-id-photo {
-        height:145px;
-      }
-      .smart-id-row {
-        font-size:13px;
-        padding:8px 1px;
-      }
-      .smart-id-number {
-        font-size:12px;
-        padding:8px;
-      }
-      .smart-id-ribbon {
-        font-size:17px;
-        padding:9px 18px;
-      }
-    }
-  `;
-
-  document.querySelector('#smartMemberCardStyles')?.remove();
-
-  const style = document.createElement('style');
-  style.id = 'smartMemberCardStyles';
-  style.textContent = styles;
-  document.head.appendChild(style);
-
-  profilePanel.insertAdjacentHTML('afterend', `
-    <section class="panel" id="memberIdCardPanel">
-      <h2 class="heading-green">
-        🪪 স্মার্ট ডিজিটাল সদস্য পরিচয়পত্র
-      </h2>
-
-      <div class="smart-id-card" id="digitalMemberCard">
-        <div class="smart-id-header">
-          <img class="smart-id-logo"
-            src="/logo.png" alt="সংগঠনের লোগো">
-
-          <h2>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</h2>
-          <p>একতাই শক্তি · Unity is Strength</p>
-
-          <div class="smart-id-ribbon">
-            ★ সদস্য পরিচয়পত্র ★
-          </div>
-        </div>
-
-        <div class="smart-id-body">
-          <div>
-            <img class="smart-id-photo"
-              src="${escapeHTML(photoURL)}"
-              alt="সদস্যের ছবি">
-
-            <div class="smart-id-qr-area">
-              <div id="memberCardQR"></div>
-              <p class="smart-id-qr-label">
-                সদস্য যাচাই QR
-              </p>
-            </div>
-
-            <p style="
-              margin:10px 0;
-              padding:9px;
-              border-radius:25px;
-              background:#075b3c;
-              color:#fff !important;
-              text-align:center;
-              font-size:13px;
-              font-weight:900;
-            ">
-              অনুমোদিত সদস্য
-            </p>
-          </div>
-
-          <div>
-            <h2 class="smart-id-member-name">${name}</h2>
-
-            <div class="smart-id-number">
-              সদস্য আইডি: ${escapeHTML(memberId)}
-            </div>
-
-            <span class="smart-id-status">
-              সাধারণ সদস্য
-            </span>
-
-            <div class="smart-id-details">
-              <div class="smart-id-row">
-                <strong>☎ মোবাইল:</strong> ${phone}
-              </div>
-              <div class="smart-id-row">
-                <strong>🩸 রক্তের গ্রুপ:</strong> ${blood}
-              </div>
-              <div class="smart-id-row">
-                <strong>📍 ঠিকানা:</strong> ${address}
-              </div>
-              <div class="smart-id-row">
-                <strong>📅 যোগদানের তারিখ:</strong> ${escapeHTML(joinDate)}
-              </div>
-              <div class="smart-id-row">
-                <strong>👤 পেশা:</strong> ${occupation}
-              </div>
-              <div class="smart-id-row">
-                <strong>✓ সদস্যপদ:</strong> অনুমোদিত
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="smart-id-footer">
-          সামাজিক উন্নয়ন, মানবকল্যাণ ও ঐক্যের জন্য আমরা একসাথে
-          <br>
-          উত্তর নলটেক সমাজ কল্যাণ সংগঠন
-        </div>
-      </div>
-
-      <button type="button" class="smart-id-download"
-        id="downloadMemberCard">
-        ⬇ পরিচয়পত্র PDF ডাউনলোড করুন
-      </button>
-    </section>
-  `);
-
-  // QR কোড লাইব্রেরি লোড করে QR তৈরি
-  const makeQR = () => {
-    const qrBox = $('#memberCardQR');
-    if (!qrBox || typeof QRCode === 'undefined') return;
-
-    qrBox.innerHTML = '';
-    new QRCode(qrBox, {
-      text: verifyURL,
-      width: 135,
-      height: 135,
-      correctLevel: QRCode.CorrectLevel.M
-    });
-  };
+  }
 
   if (typeof QRCode !== 'undefined') {
     makeQR();
   } else {
-    const qrScript = document.createElement('script');
-    qrScript.src =
-      'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    qrScript.onload = makeQR;
-    document.head.appendChild(qrScript);
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.onload = makeQR;
+    script.onerror = () => {
+      qrBox.textContent = 'QR লোড হয়নি';
+    };
+    document.head.appendChild(script);
   }
-
-  $('#downloadMemberCard').onclick = () => {
-    const printWindow = window.open('', '_blank');
-
-    if (!printWindow) {
-      alert('PDF তৈরির জন্য ব্রাউজারে পপ-আপ অনুমতি দিন।');
-      return;
-    }
-
-    const card = $('#digitalMemberCard').outerHTML;
-    const qrImage = $('#memberCardQR img')?.src || '';
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html lang="bn">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>সদস্য পরিচয়পত্র</title>
-        <style>
-          ${styles}
-          body {
-            margin:0;
-            padding:10px;
-            background:#fff;
-            font-family:system-ui,sans-serif;
-          }
-          .smart-id-card {
-            max-width:760px;
-            margin:0 auto;
-            -webkit-print-color-adjust:exact;
-            print-color-adjust:exact;
-          }
-          @page {
-            size:A4 portrait;
-            margin:8mm;
-          }
-        </style>
-      </head>
-      <body>
-        ${card}
-        <script>
-          const qr = document.querySelector('#memberCardQR');
-          if (qr && ${JSON.stringify(qrImage)}) {
-            qr.innerHTML = '<img src="${qrImage}" width="135" height="135">';
-          }
-          window.onload = function() {
-            window.print();
-          };
-        <\/script>
-      </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-  };
 }
-  
+
 async function memberView() {
   const menuItems = [
     { id: 'home', icon: '⌂', label: 'হোম' },
