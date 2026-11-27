@@ -1592,6 +1592,7 @@ function setupMemberIdCard() {
           </div>
         </div>
        </div>
+
        
         <footer class="id-footer">
         সামাজিক উন্নয়ন, মানবকল্যাণ ও ঐক্যের জন্য আমরা একসাথে
