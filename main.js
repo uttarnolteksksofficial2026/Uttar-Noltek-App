@@ -1170,7 +1170,6 @@ function renderPayments(payments) {
 
 function setupMemberIdCard() {
   if (!currentUser || !profile) return;
-  if (document.querySelector('#memberIdCardPanel')) return;
 
   const headings = [...document.querySelectorAll('h2')];
   const profileHeading = headings.find(
@@ -1178,10 +1177,13 @@ function setupMemberIdCard() {
   );
 
   const profilePanel = profileHeading?.closest('.panel');
+
   if (!profilePanel) {
-    console.error('আমার প্রোফাইল প্যানেল পাওয়া যায়নি');
+    console.error('প্রোফাইল প্যানেল পাওয়া যায়নি');
     return;
   }
+
+  document.querySelector('#memberIdCardPanel')?.remove();
 
   const memberId = currentUser.uid.slice(0, 10).toUpperCase();
 
@@ -1195,82 +1197,297 @@ function setupMemberIdCard() {
   const phone = escapeHTML(profile.phone || 'তথ্য নেই');
   const address = escapeHTML(profile.address || 'তথ্য নেই');
   const blood = escapeHTML(profile.bloodGroup || 'তথ্য নেই');
-  const job = escapeHTML(profile.occupation || 'তথ্য নেই');
+  const occupation = escapeHTML(profile.occupation || 'তথ্য নেই');
+
+  const cardStyles = `
+    .smart-id-card {
+      width:100%;
+      max-width:650px;
+      margin:18px auto;
+      overflow:hidden;
+      border:3px solid #c49a38;
+      border-radius:22px;
+      background:#fff;
+      color:#064b35;
+      box-shadow:0 8px 25px rgba(0,50,30,.16);
+      font-family:system-ui,sans-serif;
+    }
+    .smart-id-card * {
+      box-sizing:border-box;
+    }
+    .smart-id-header {
+      padding:22px 18px 28px;
+      text-align:center;
+      color:#fff !important;
+      background:linear-gradient(135deg,#034b32,#087a50);
+      border-bottom:8px solid #d5ad43;
+    }
+    .smart-id-header h2,
+    .smart-id-header p {
+      color:#fff !important;
+      margin:8px 0;
+    }
+    .smart-id-header h2 {
+      font-size:clamp(20px,5vw,30px);
+      font-weight:900;
+    }
+    .smart-id-header p {
+      font-size:14px;
+    }
+    .smart-id-logo {
+      width:76px;
+      height:76px;
+      object-fit:contain;
+      border-radius:50%;
+      background:#fff;
+      border:3px solid #e5c36b;
+      padding:3px;
+    }
+    .smart-id-ribbon {
+      display:inline-block;
+      margin-top:12px;
+      padding:8px 25px;
+      border-radius:30px;
+      background:#e7c45c;
+      color:#064b35 !important;
+      font-size:19px;
+      font-weight:900;
+    }
+    .smart-id-body {
+      display:grid;
+      grid-template-columns:145px minmax(0,1fr);
+      gap:16px;
+      padding:20px;
+      background:#fff;
+    }
+    .smart-id-photo {
+      width:100%;
+      height:175px;
+      object-fit:cover;
+      border:5px solid #08734d;
+      border-radius:16px;
+      background:#e8f5ed;
+      padding:3px;
+    }
+    .smart-id-member-name {
+      margin:0 0 10px;
+      color:#064b35 !important;
+      font-size:clamp(19px,4.5vw,27px);
+      font-weight:900;
+      line-height:1.4;
+      overflow-wrap:anywhere;
+    }
+    .smart-id-number {
+      margin:8px 0 12px;
+      padding:8px 10px;
+      border-radius:12px;
+      background:#e5f4d2;
+      color:#064b35 !important;
+      font-size:14px;
+      font-weight:800;
+      overflow-wrap:anywhere;
+    }
+    .smart-id-status {
+      display:inline-block;
+      padding:6px 15px;
+      border-radius:30px;
+      background:#075b3c;
+      color:#fff !important;
+      font-size:13px;
+      font-weight:800;
+    }
+    .smart-id-details {
+      margin-top:16px;
+      border-top:1px solid #dce7df;
+    }
+    .smart-id-row {
+      padding:10px 2px;
+      border-bottom:1px solid #e2e9e4;
+      color:#153f30 !important;
+      font-size:15px;
+      line-height:1.6;
+      overflow-wrap:anywhere;
+    }
+    .smart-id-row strong {
+      color:#075b3c !important;
+    }
+    .smart-id-footer {
+      padding:15px;
+      text-align:center;
+      color:#fff !important;
+      background:#064b35;
+      font-size:13px;
+      font-weight:700;
+    }
+    .smart-id-download {
+      width:100%;
+      margin-top:14px;
+      padding:16px;
+      border:0;
+      border-radius:15px;
+      background:linear-gradient(100deg,#076b47,#0c9c70);
+      color:#fff !important;
+      font-size:18px;
+      font-weight:900;
+    }
+    @media(max-width:430px) {
+      .smart-id-body {
+        grid-template-columns:105px minmax(0,1fr);
+        gap:10px;
+        padding:12px;
+      }
+      .smart-id-photo {
+        height:135px;
+      }
+      .smart-id-row {
+        font-size:13px;
+        padding:8px 1px;
+      }
+      .smart-id-number {
+        font-size:12px;
+        padding:7px;
+      }
+    }
+  `;
+
+  document.querySelector('#smartMemberCardStyles')?.remove();
+
+  const styleElement = document.createElement('style');
+  styleElement.id = 'smartMemberCardStyles';
+  styleElement.textContent = cardStyles;
+  document.head.appendChild(styleElement);
 
   profilePanel.insertAdjacentHTML('afterend', `
     <section class="panel" id="memberIdCardPanel">
-      <h2 class="heading-green">🪪 আমার ডিজিটাল পরিচয়পত্র</h2>
+      <h2 class="heading-green">🪪 স্মার্ট ডিজিটাল সদস্য পরিচয়পত্র</h2>
 
-      <div id="digitalMemberCard" style="
-        max-width:390px;margin:15px auto;padding:22px;
-        border:3px solid #c49a38;border-radius:18px;
-        background:linear-gradient(145deg,#064b35,#08734d);
-        color:white;text-align:center;
-      ">
-        <img src="/logo.png" alt="লোগো"
-          style="width:65px;height:65px;object-fit:contain;">
+      <div class="smart-id-card" id="digitalMemberCard">
+        <div class="smart-id-header">
+          <img class="smart-id-logo" src="/logo.png"
+            alt="সংগঠনের লোগো">
 
-        <h3 style="color:#f7d879;">
+          <h2>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</h2>
+          <p>একতাই শক্তি · Unity is Strength</p>
+
+          <div class="smart-id-ribbon">
+            ★ সদস্য পরিচয়পত্র ★
+          </div>
+        </div>
+
+        <div class="smart-id-body">
+          <div>
+            <img class="smart-id-photo"
+              src="${escapeHTML(photoURL)}"
+              alt="সদস্যের ছবি">
+
+            <p style="
+              margin:10px 0;
+              padding:8px;
+              border-radius:20px;
+              background:#075b3c;
+              color:#fff !important;
+              text-align:center;
+              font-size:12px;
+              font-weight:800;
+            ">
+              অনুমোদিত সদস্য
+            </p>
+          </div>
+
+          <div>
+            <h2 class="smart-id-member-name">${name}</h2>
+
+            <div class="smart-id-number">
+              সদস্য আইডি: ${escapeHTML(memberId)}
+            </div>
+
+            <span class="smart-id-status">
+              সাধারণ সদস্য
+            </span>
+
+            <div class="smart-id-details">
+              <div class="smart-id-row">
+                <strong>☎ মোবাইল:</strong> ${phone}
+              </div>
+              <div class="smart-id-row">
+                <strong>🩸 রক্তের গ্রুপ:</strong> ${blood}
+              </div>
+              <div class="smart-id-row">
+                <strong>📍 ঠিকানা:</strong> ${address}
+              </div>
+              <div class="smart-id-row">
+                <strong>👤 পেশা:</strong> ${occupation}
+              </div>
+              <div class="smart-id-row">
+                <strong>✓ সদস্যপদ:</strong> অনুমোদিত
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="smart-id-footer">
+          সামাজিক উন্নয়ন, মানবকল্যাণ ও ঐক্যের জন্য আমরা একসাথে
+          <br>
           উত্তর নলটেক সমাজ কল্যাণ সংগঠন
-        </h3>
-        <p>ডিজিটাল সদস্য পরিচয়পত্র</p>
-
-        <img src="${escapeHTML(photoURL)}" alt="সদস্যের ছবি"
-          style="width:105px;height:115px;object-fit:cover;
-          border:3px solid #e5c36b;border-radius:12px;">
-
-        <h2 style="color:#ffe39a;">${name}</h2>
-        <p>সদস্য আইডি: ${memberId}</p>
-
-        <div style="text-align:left;line-height:1.9;
-          background:rgba(255,255,255,.10);padding:12px;">
-          <p>মোবাইল: ${phone}</p>
-          <p>ঠিকানা: ${address}</p>
-          <p>রক্তের গ্রুপ: ${blood}</p>
-          <p>পেশা: ${job}</p>
-          <p>সদস্যপদ: অনুমোদিত</p>
         </div>
       </div>
 
-      <button type="button" class="primary"
-        id="downloadMemberCard" style="width:100%;">
-        📄 পরিচয়পত্র PDF ডাউনলোড
+      <button type="button" class="smart-id-download"
+        id="downloadMemberCard">
+        ⬇ পরিচয়পত্র PDF ডাউনলোড করুন
       </button>
     </section>
   `);
 
   $('#downloadMemberCard').onclick = () => {
-    const win = window.open('', '_blank');
-    if (!win) {
-      alert('পপ-আপ অনুমতি দিন।');
+    const printWindow = window.open('', '_blank');
+
+    if (!printWindow) {
+      alert('PDF তৈরির জন্য ব্রাউজারে পপ-আপ অনুমতি দিন।');
       return;
     }
 
-    win.document.write(`
+    const card = $('#digitalMemberCard').outerHTML;
+
+    printWindow.document.write(`
       <!DOCTYPE html>
       <html lang="bn">
       <head>
         <meta charset="UTF-8">
-        <title>সদস্য পরিচয়পত্র</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ডিজিটাল সদস্য পরিচয়পত্র</title>
         <style>
-          body { font-family:Arial,sans-serif;padding:20px; }
-          #digitalMemberCard {
-            width:340px;margin:20px auto;
+          ${cardStyles}
+          body {
+            margin:0;
+            padding:12px;
+            background:#fff;
+            font-family:system-ui,sans-serif;
+          }
+          .smart-id-card {
+            max-width:650px;
+            margin:0 auto;
             -webkit-print-color-adjust:exact;
             print-color-adjust:exact;
           }
-          @page { size:A5 portrait;margin:10mm; }
+          @page {
+            size:A4 portrait;
+            margin:10mm;
+          }
         </style>
       </head>
       <body>
-        ${$('#digitalMemberCard').outerHTML}
+        ${card}
         <script>
-          window.onload = () => window.print();
+          window.onload = function() {
+            window.print();
+          };
         <\/script>
       </body>
       </html>
     `);
-    win.document.close();
+
+    printWindow.document.close();
   };
 }
         
