@@ -257,7 +257,8 @@ function loginView() {
         text-align: center;
         margin-top: 55px;
       } .welcome-content h1 {
-  color: #FFD700;
+      color: #FFD700 !important;
+}
 }
 
       .welcome-content .welcome-eyebrow {
