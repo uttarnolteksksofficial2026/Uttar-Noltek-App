@@ -2342,7 +2342,8 @@ async function adminView() {
   $('#saveConstitution').onclick = saveConstitution;
   $('#cancelConstitutionEdit').onclick = cancelConstitutionEdit;
   $('#saveConstitutionStatus').onclick = saveConstitutionStatus;
-  
+ 
+  setupAdminMemberCards();
   await refreshAdmin();
 }
 async function setupAdminMemberCards() {
