@@ -1,4 +1,3 @@
-
 import './style.css';
 import { auth, db, storage } from './firebase.js';
 
