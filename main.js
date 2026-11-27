@@ -2056,7 +2056,7 @@ async function memberView() {
   $('#memberDirectorySearch').addEventListener('input', renderDirectory);
 
   try {
-  const users = await getList('publicMembers');
+  const users = await getList('users');
     directoryMembers = users.filter(member =>
       member.status === 'approved' && member.role !== 'admin'
     );
