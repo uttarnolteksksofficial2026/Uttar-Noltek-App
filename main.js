@@ -1167,14 +1167,21 @@ function renderPayments(payments) {
 
 /* MEMBER DASHBOARD */
 
+
 function setupMemberIdCard() {
-  const homePage =
-    document.querySelector('[data-page="home"]') ||
-    document.querySelector('.app-main');
-
-  if (!homePage || !currentUser || !profile) return;
-
+  if (!currentUser || !profile) return;
   if (document.querySelector('#memberIdCardPanel')) return;
+
+  const headings = [...document.querySelectorAll('h2')];
+  const profileHeading = headings.find(
+    h => h.textContent.trim() === 'আমার প্রোফাইল'
+  );
+
+  const profilePanel = profileHeading?.closest('.panel');
+  if (!profilePanel) {
+    console.error('আমার প্রোফাইল প্যানেল পাওয়া যায়নি');
+    return;
+  }
 
   const memberId = currentUser.uid.slice(0, 10).toUpperCase();
 
@@ -1187,25 +1194,20 @@ function setupMemberIdCard() {
   const name = escapeHTML(profile.fullName || 'নাম পাওয়া যায়নি');
   const phone = escapeHTML(profile.phone || 'তথ্য নেই');
   const address = escapeHTML(profile.address || 'তথ্য নেই');
-  const bloodGroup = escapeHTML(profile.bloodGroup || 'তথ্য নেই');
-  const occupation = escapeHTML(profile.occupation || 'তথ্য নেই');
+  const blood = escapeHTML(profile.bloodGroup || 'তথ্য নেই');
+  const job = escapeHTML(profile.occupation || 'তথ্য নেই');
 
-  homePage.insertAdjacentHTML('beforeend', `
+  profilePanel.insertAdjacentHTML('afterend', `
     <section class="panel" id="memberIdCardPanel">
       <h2 class="heading-green">🪪 আমার ডিজিটাল পরিচয়পত্র</h2>
 
       <div id="digitalMemberCard" style="
-        max-width:390px;
-        margin:15px auto;
-        padding:22px;
-        border:3px solid #c49a38;
-        border-radius:18px;
+        max-width:390px;margin:15px auto;padding:22px;
+        border:3px solid #c49a38;border-radius:18px;
         background:linear-gradient(145deg,#064b35,#08734d);
-        color:white;
-        text-align:center;
-        box-shadow:0 5px 18px rgba(0,0,0,.18);
+        color:white;text-align:center;
       ">
-        <img src="/logo.png" alt="সংগঠনের লোগো"
+        <img src="/logo.png" alt="লোগো"
           style="width:65px;height:65px;object-fit:contain;">
 
         <h3 style="color:#f7d879;">
@@ -1220,64 +1222,58 @@ function setupMemberIdCard() {
         <h2 style="color:#ffe39a;">${name}</h2>
         <p>সদস্য আইডি: ${memberId}</p>
 
-        <div style="text-align:left;background:rgba(255,255,255,.10);
-          padding:12px;border-radius:10px;line-height:1.8;">
+        <div style="text-align:left;line-height:1.9;
+          background:rgba(255,255,255,.10);padding:12px;">
           <p>মোবাইল: ${phone}</p>
           <p>ঠিকানা: ${address}</p>
-          <p>রক্তের গ্রুপ: ${bloodGroup}</p>
-          <p>পেশা: ${occupation}</p>
+          <p>রক্তের গ্রুপ: ${blood}</p>
+          <p>পেশা: ${job}</p>
           <p>সদস্যপদ: অনুমোদিত</p>
         </div>
       </div>
 
       <button type="button" class="primary"
-        id="downloadMemberCard"
-        style="width:100%;margin-top:12px;">
+        id="downloadMemberCard" style="width:100%;">
         📄 পরিচয়পত্র PDF ডাউনলোড
       </button>
     </section>
   `);
 
   $('#downloadMemberCard').onclick = () => {
-    const printWindow = window.open('', '_blank');
-
-    if (!printWindow) {
-      alert('PDF তৈরির জন্য পপ-আপ অনুমতি দিন।');
+    const win = window.open('', '_blank');
+    if (!win) {
+      alert('পপ-আপ অনুমতি দিন।');
       return;
     }
 
-    const card = $('#digitalMemberCard').outerHTML;
-
-    printWindow.document.write(`
+    win.document.write(`
       <!DOCTYPE html>
       <html lang="bn">
       <head>
         <meta charset="UTF-8">
         <title>সদস্য পরিচয়পত্র</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
+          body { font-family:Arial,sans-serif;padding:20px; }
           #digitalMemberCard {
-            width: 340px;
-            margin: 20px auto;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            width:340px;margin:20px auto;
+            -webkit-print-color-adjust:exact;
+            print-color-adjust:exact;
           }
-          @page { size: A5 portrait; margin: 10mm; }
+          @page { size:A5 portrait;margin:10mm; }
         </style>
       </head>
       <body>
-        ${card}
+        ${$('#digitalMemberCard').outerHTML}
         <script>
-          window.onload = function() { window.print(); };
+          window.onload = () => window.print();
         <\/script>
       </body>
       </html>
     `);
-
-    printWindow.document.close();
+    win.document.close();
   };
 }
-
+        
 async function memberView() {
   const menuItems = [
     { id: 'home', icon: '⌂', label: 'হোম' },
