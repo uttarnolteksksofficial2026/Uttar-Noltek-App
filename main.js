@@ -228,63 +228,128 @@ function loginView() {
     <style>
       .welcome-screen {
         min-height: 100vh;
+        min-height: 100svh;
         box-sizing: border-box;
-        padding: 30px 22px;
+        position: relative;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
+        align-items: center;
+        padding: 55px 22px 28px;
         color: white;
+        text-align: center;
+        font-family: system-ui, sans-serif;
+        background: linear-gradient(135deg, #079b58, #0786bd);
+      }
+
+      .welcome-screen * {
+        box-sizing: border-box;
+      }
+
+      .welcome-screen [hidden] {
+        display: none !important;
+      }
+
+      .village-backdrop {
+        position: absolute;
+        inset: 42% 0 0;
+        background:
+          linear-gradient(
+            to bottom,
+            rgba(0, 145, 125, .18),
+            rgba(0, 80, 75, .48)
+          ),
+          url('/village.jpg') center bottom / cover no-repeat;
+        opacity: .82;
+        pointer-events: none;
+      }
+
+      .welcome-screen::before {
+        content: "";
+        position: absolute;
+        inset: 0;
         background: linear-gradient(
-          145deg,
-          #087f5b 0%,
-          #0796a8 48%,
-          #075985 100%
+          to bottom,
+          rgba(0, 100, 70, .08),
+          transparent 45%,
+          rgba(0, 60, 55, .16)
         );
+        pointer-events: none;
+      }
+
+      .welcome-logo,
+      .welcome-content,
+      .welcome-buttons,
+      .welcome-form,
+      .welcome-back {
+        position: relative;
+        z-index: 1;
       }
 
       .welcome-logo {
-        text-align: center;
-        margin-top: 25px;
+        width: 112px;
+        height: 112px;
+        border-radius: 26px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        margin: 0 auto 38px;
+        box-shadow: 0 8px 24px rgba(0, 45, 35, .18);
       }
 
       .welcome-logo img {
-        width: 125px;
-        height: 125px;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
-        border-radius: 22px;
       }
 
       .welcome-content {
-        text-align: center;
-        margin-top: 55px;
-      } .welcome-content h1 {
-      color: #FFD700 !important;
-}
-}
+        width: 100%;
+        max-width: 520px;
+      }
 
-      .welcome-content .welcome-eyebrow {
-        font-size: 14px;
-        letter-spacing: 4px;
+      .welcome-eyebrow {
+        font-size: 15px;
         font-weight: 700;
-        color: #d1fae5;
+        letter-spacing: 8px;
+        margin-bottom: 22px;
+        color: #e7fff6;
       }
 
       .welcome-content h1 {
-        font-size: 35px;
-        margin: 12px 0;
-        color: #ffffff;
+        font-size: clamp(48px, 13vw, 76px);
+        line-height: 1.25;
+        margin: 0;
+        font-weight: 800;
+        color: #fff;
+        text-shadow: 0 2px 8px rgba(0, 50, 40, .12);
+      }
+
+      .welcome-underline {
+        width: 58%;
+        max-width: 300px;
+        height: 5px;
+        border-radius: 50%;
+        margin: 4px auto 26px;
+        background: #a8ed45;
+        transform: rotate(-2deg);
       }
 
       .welcome-content p {
         font-size: 17px;
-        line-height: 1.9;
-        color: #f0fdfa;
-        max-width: 350px;
+        line-height: 1.8;
         margin: 0 auto;
+        color: #fff;
+        text-shadow: 0 1px 5px rgba(0, 45, 40, .25);
       }
 
       .welcome-buttons {
+        width: 100%;
+        max-width: 520px;
         margin-top: auto;
-        padding-top: 45px;
+        padding-top: 36px;
         display: flex;
         flex-direction: column;
         gap: 16px;
@@ -292,206 +357,195 @@ function loginView() {
 
       .welcome-buttons button {
         width: 100%;
-        min-height: 58px;
-        border: none;
-        border-radius: 40px;
-        font-size: 20px;
-        font-weight: 700;
+        min-height: 70px;
+        border: 0;
+        border-radius: 50px;
+        font-size: 23px;
+        font-weight: 750;
         cursor: pointer;
+        box-shadow: 0 5px 16px rgba(0, 45, 40, .18);
       }
 
       .welcome-login {
-        background: #ffffff;
-        color: #087f5b;
+        background: #fff;
+        color: #07875a;
       }
 
       .welcome-register {
-        background: #38bdf8;
-        color: #ffffff;
+        background: #20b6f2;
+        color: #fff;
       }
 
       .welcome-form {
-        margin-top: 28px;
+        width: 100%;
+        max-width: 520px;
+        margin-top: 24px;
         padding: 22px;
-        background: #ffffff;
-        color: #17445b;
-        border-radius: 22px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, .96);
+        color: #163d35;
+        text-align: left;
+        box-shadow: 0 8px 25px rgba(0, 40, 35, .18);
       }
 
       .welcome-form h2 {
-        color: #087f5b;
+        margin: 0 0 16px;
         text-align: center;
+        font-size: 21px;
       }
 
       .welcome-form label {
         display: block;
-        margin: 14px 0 7px;
-        color: #17445b;
+        margin: 12px 0 6px;
+        font-size: 14px;
+        font-weight: 650;
       }
 
       .welcome-form input,
-      .welcome-form textarea,
-      .welcome-form select {
+      .welcome-form select,
+      .welcome-form textarea {
         width: 100%;
-        box-sizing: border-box;
-        padding: 13px;
-        border: 1px solid #cbdce8;
+        min-height: 48px;
+        border: 1px solid #d5e5df;
         border-radius: 12px;
+        padding: 12px;
         font-size: 16px;
-        background: #ffffff;
-        color: #173b58;
+        background: #fff;
+        color: #173c35;
+        outline-color: #079b75;
+      }
+
+      .welcome-form textarea {
+        min-height: 72px;
+        resize: vertical;
       }
 
       .welcome-form button {
         width: 100%;
-        min-height: 48px;
+        min-height: 50px;
+        border: 0;
+        border-radius: 14px;
         margin-top: 14px;
-        border-radius: 30px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
       }
 
       .welcome-form .primary {
-        background: #087f5b;
-        color: #ffffff;
-        border: none;
+        background: #07875a;
+        color: white;
       }
 
       .welcome-form .secondary {
-        background: #e8f4f8;
-        color: #075985;
-        border: 1px solid #c6e4ef;
+        background: #eaf6f1;
+        color: #087a56;
       }
 
-      .welcome-hint {
-        color: #64748b;
-        font-size: 13px;
-        line-height: 1.7;
+      .welcome-message {
+        color: #b42318;
+        text-align: center;
+        font-size: 14px;
+        margin: 12px 0 0;
       }
 
       .welcome-back {
-        margin-top: 20px;
-        width: 100%;
-        min-height: 45px;
-        border: 1px solid #ffffff99;
-        border-radius: 30px;
-        color: #ffffff;
+        border: 0;
         background: transparent;
+        color: white;
+        font-size: 16px;
+        font-weight: 650;
+        margin-top: 18px;
+        padding: 10px 18px;
+        cursor: pointer;
+      }
+
+      @media (max-height: 760px) {
+        .welcome-screen {
+          padding-top: 28px;
+        }
+
+        .welcome-logo {
+          width: 86px;
+          height: 86px;
+          margin-bottom: 24px;
+        }
+
+        .welcome-buttons button {
+          min-height: 58px;
+        }
       }
     </style>
 
     <main class="welcome-screen">
+      <div class="village-backdrop"></div>
+
       <div class="welcome-logo">
         ${logoHTML()}
       </div>
 
-      <section class="welcome-content">
+      <section class="welcome-content" id="welcomeContent">
         <div class="welcome-eyebrow">WELCOME</div>
         <h1>স্বাগতম</h1>
+        <div class="welcome-underline"></div>
         <p>
-          আমাদের উত্তর নলটেক সমাজ কল্যাণ সংগঠনের
-          সদস্য প্ল্যাটফর্মে আপনাকে স্বাগতম।
+          আমাদের উত্তর নলটেক সমাজ কল্যাণ সংগঠনের সদস্য
+          প্ল্যাটফর্মে আপনাকে স্বাগতম।
         </p>
       </section>
 
       <div class="welcome-buttons" id="welcomeChoices">
-        <button class="welcome-login" id="showLogin" type="button">
-          Log In
-        </button>
-
-        <button class="welcome-register" id="showRegister" type="button">
-          Register
-        </button>
+        <button class="welcome-login" id="showLogin">Log In</button>
+        <button class="welcome-register" id="showRegister">Register</button>
       </div>
 
       <section class="welcome-form" id="welcomeForm" hidden>
         <div id="authCredentials" hidden>
           <label for="email">Gmail / ইমেইল</label>
-          <input
-            id="email"
-            type="email"
-            autocomplete="email"
-            placeholder="আপনার ইমেইল লিখুন"
-          >
+          <input id="email" type="email" placeholder="আপনার ইমেইল" autocomplete="email">
 
           <label for="password">পাসওয়ার্ড</label>
-          <input
-            id="password"
-            type="password"
-            autocomplete="current-password"
-            placeholder="পাসওয়ার্ড লিখুন"
-          >
+          <input id="password" type="password" placeholder="পাসওয়ার্ড" autocomplete="current-password">
         </div>
 
         <div id="loginActions" hidden>
-          <button class="primary" id="sendOtp" type="button">
-            লগইন করুন
-          </button>
-
-          <button class="secondary" id="verifyOtp" type="button">
-            পাসওয়ার্ড ভুলে গেছেন?
-          </button>
+          <button class="primary" id="sendOtp">লগইন করুন</button>
+          <button class="secondary" id="verifyOtp">পাসওয়ার্ড ভুলে গেছেন?</button>
         </div>
 
         <div id="registrationFields" hidden>
           <h2>নতুন সদস্য নিবন্ধন</h2>
 
-          <label for="fullName">পূর্ণ নাম *</label>
-          <input
-            id="fullName"
-            type="text"
-            autocomplete="name"
-            placeholder="আপনার সম্পূর্ণ নাম"
-          >
+          <label for="fullName">সম্পূর্ণ নাম</label>
+          <input id="fullName" type="text" placeholder="আপনার নাম" autocomplete="name">
 
-          <label for="memberPhone">মোবাইল নম্বর *</label>
-          <input
-            id="memberPhone"
-            type="tel"
-            autocomplete="tel"
-            placeholder="মোবাইল নম্বর লিখুন"
-          >
+          <label for="memberPhone">মোবাইল নম্বর</label>
+          <input id="memberPhone" type="tel" placeholder="মোবাইল নম্বর" autocomplete="tel">
 
-          <label for="memberAddress">পূর্ণ ঠিকানা *</label>
-          <textarea
-            id="memberAddress"
-            rows="3"
-            placeholder="গ্রাম, ইউনিয়ন, উপজেলা, জেলা"
-          ></textarea>
+          <label for="memberAddress">ঠিকানা</label>
+          <textarea id="memberAddress" placeholder="গ্রাম, ইউনিয়ন, উপজেলা"></textarea>
 
-          <label for="bloodGroup">রক্তের গ্রুপ *</label>
+          <label for="bloodGroup">রক্তের গ্রুপ</label>
           <select id="bloodGroup">
             <option value="">রক্তের গ্রুপ নির্বাচন করুন</option>
-            <option value="A+">A+</option>
-            <option value="A-">A-</option>
-            <option value="B+">B+</option>
-            <option value="B-">B-</option>
-            <option value="AB+">AB+</option>
-            <option value="AB-">AB-</option>
-            <option value="O+">O+</option>
-            <option value="O-">O-</option>
-            <option value="জানা নেই">জানা নেই</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+            <option>O+</option><option>O-</option>
           </select>
 
           <label for="memberOccupation">পেশা (ঐচ্ছিক)</label>
-          <input
-            id="memberOccupation"
-            type="text"
-            placeholder="আপনার পেশা"
-          >
+          <input id="memberOccupation" type="text" placeholder="আপনার পেশা">
 
-          <p class="welcome-hint">
-            নিবন্ধনের জন্য Gmail ও পাসওয়ার্ডের ঘরও পূরণ করতে হবে।
-          </p>
-
-          <button class="primary" id="registerMember" type="button">
+          <button class="primary" id="registerMember">
             নতুন সদস্য অ্যাকাউন্ট খুলুন
           </button>
         </div>
 
-        <p class="welcome-hint" id="message" role="status" aria-live="polite"></p>
+        <p class="welcome-message" id="message"></p>
       </section>
 
-      <button class="welcome-back" id="backToChoices" type="button" hidden>
-        ফিরে যান
+      <button class="welcome-back" id="backToChoices" hidden>
+        ← ফিরে যান
       </button>
     </main>
   `;
@@ -531,10 +585,10 @@ function loginView() {
   };
 
   $('#sendOtp').onclick = sendOtp;
-  $('#registerMember').onclick = registerMember;
   $('#verifyOtp').onclick = verifyOtp;
-}  
-             
+  $('#registerMember').onclick = registerMember;
+}
+  
 async function verifyOtp() {
   const message = $('#message');
   const button = $('#verifyOtp');
