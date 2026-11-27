@@ -1167,485 +1167,247 @@ function renderPayments(payments) {
 
 /* MEMBER DASHBOARD */
 
-function setupMemberIdCard() {
-  const oldCard = document.getElementById('member-id-card');
-  if (oldCard) oldCard.remove();
+async function setupMemberIdCard(profile = {}) {
+  const container = document.getElementById('memberIdCard');
+  if (!container) return;
 
-  if (!currentUser || !profile) return;
-
-  const heading = [...document.querySelectorAll('h2')]
-    .find(h => h.textContent.trim() === 'আমার প্রোফাইল');
-
-  const profilePanel = heading?.closest('.panel');
-  if (!profilePanel) return;
-
-  const esc = value => String(value || 'তথ্য নেই').replace(/[&<>"']/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  }[c]));
-
-  const name = profile.fullName || profile.name || 'সদস্যের নাম';
-  const memberId = profile.memberId || currentUser.uid;
-  const phone = profile.phone || currentUser.phoneNumber || 'তথ্য নেই';
-  const blood = profile.bloodGroup || 'তথ্য নেই';
-  const address = profile.address || 'তথ্য নেই';
-  const occupation = profile.occupation || 'তথ্য নেই';
-  const photo = profile.photoURL || profile.photoUrl || '';
-
-  let joinDate = 'তথ্য নেই';
-  if (profile.createdAt) {
-    const date = profile.createdAt.toDate
-      ? profile.createdAt.toDate()
-      : new Date(profile.createdAt);
-
-    if (!isNaN(date.getTime())) {
-      joinDate = date.toLocaleDateString('bn-BD', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    }
+  const user = auth.currentUser;
+  if (!user) {
+    container.innerHTML = '<p>সদস্যের তথ্য পাওয়া যায়নি।</p>';
+    return;
   }
 
-  const card = document.createElement('section');
-  card.id = 'member-id-card';
+  const member = {
+    name: profile.fullName || 'সদস্যের নাম',
+    photo: profile.photoURL || '',
+    phone: profile.phone || '',
+    address: profile.address || '',
+    blood: profile.bloodGroup || '',
+    occupation: profile.occupation || '',
+    id: profile.memberId || user.uid.slice(0, 8).toUpperCase(),
+    status: profile.status || 'pending',
+    joined: profile.createdAt?.toDate
+      ? profile.createdAt.toDate().toLocaleDateString('bn-BD')
+      : 'তথ্য নেই'
+  };
 
-  card.innerHTML = `
+  const qrUrl = 'https://uttar-noltek-app.vercel.app/?verify=' +
+    encodeURIComponent(user.uid);
+
+  const qrImage = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' +
+    encodeURIComponent(qrUrl);
+
+  const safe = value => String(value || 'তথ্য নেই')
+    .replace(/[&<>"']/g, c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[c]));
+
+  container.innerHTML = `
     <style>
-      #member-id-card {
-        width: 100%;
-        max-width: 620px;
-        margin: 16px auto;
-        font-family: system-ui, sans-serif;
-        color: #064b25;
+      .member-id-card {
+        max-width: 390px;
+        margin: 18px auto;
+        padding: 7px;
+        border-radius: 19px;
+        background: linear-gradient(135deg,#b88a32,#f7e6a1,#997022);
+        box-shadow: 0 9px 28px #0005;
       }
-
-      #member-id-card * {
-        box-sizing: border-box;
-      }
-
-      #member-id-card .id-card {
+      .member-id-inner {
         position: relative;
         overflow: hidden;
-        border: 3px solid #d7a72c;
-        border-radius: 25px;
-        background: #fff;
-        box-shadow: 0 6px 18px #0002;
-      }
-
-      #member-id-card .id-header {
-        position: relative;
-        overflow: hidden;
-        padding: 16px 10px 28px;
-        text-align: center;
-        color: white;
+        border: 2px solid #d9b75c;
+        border-radius: 14px;
+        padding: 17px;
+        color: #fff;
         background:
-          linear-gradient(135deg, transparent 0 18%, #ffffff12 18% 28%, transparent 28%),
-          linear-gradient(125deg, #003d1c, #007b36 65%, #005522);
-        clip-path: polygon(0 0,100% 0,100% 78%,70% 100%,0 82%);
+          radial-gradient(circle at 90% 90%,#087653 0,transparent 42%),
+          linear-gradient(145deg,#071b43,#102e58 58%,#07553e);
       }
-
-      #member-id-card .id-header:before {
-        content: "";
+      .member-id-inner:before {
+        content: "উত্তর নলটেক";
         position: absolute;
-        width: 120%;
-        height: 30px;
-        left: -10%;
-        bottom: 9px;
-        background: linear-gradient(90deg,#ffe99a,#c58c1d,#fff0a2);
-        transform: rotate(-4deg);
-      }
-
-      #member-id-card .id-logo {
-        position: relative;
-        width: 66px;
-        height: 66px;
-        object-fit: contain;
-        padding: 3px;
-        border-radius: 50%;
-        border: 4px solid #e5bd45;
-        background: white;
-      }
-
-      #member-id-card .id-org {
-        position: relative;
-        margin: 7px 0 2px;
-        font-size: clamp(16px, 3.8vw, 25px);
-        line-height: 1.35;
+        top: 42%;
+        left: 4%;
+        font-size: 34px;
         font-weight: 900;
+        color: #ffffff0b;
+        transform: rotate(-25deg);
+        pointer-events: none;
       }
-
-      #member-id-card .id-motto {
+      .id-header {
+        text-align: center;
         position: relative;
-        font-size: 12px;
-        font-weight: 600;
+        border-bottom: 1px solid #d9b75c;
+        padding-bottom: 12px;
       }
-
-      #member-id-card .id-ribbon {
-        position: relative;
-        display: inline-block;
-        margin-top: 10px;
-        padding: 7px 23px;
-        color: #075126;
+      .id-logo {
+        width: 65px;
+        height: 65px;
+        object-fit: contain;
+        border-radius: 50%;
+        background: white;
+        padding: 4px;
+        border: 2px solid #e4c66e;
+      }
+      .id-org {
+        color: #f4d887;
         font-size: 18px;
         font-weight: 900;
-        background: linear-gradient(100deg,#e9b735,#fff0a0,#d9a32a);
-        border: 2px solid #fff0a2;
-        border-radius: 9px 20px 9px 20px;
-        transform: skew(-4deg);
+        margin: 7px 0 3px;
       }
-
-      #member-id-card .id-content {
-        display: grid;
-        grid-template-columns: 34% minmax(0,1fr);
-        gap: 11px;
-        padding: 6px 12px 12px;
-      }
-
-      #member-id-card .id-left,
-      #member-id-card .id-right {
-        min-width: 0;
-      }
-
-      #member-id-card .id-photo-frame {
-        padding: 5px;
-        border: 3px solid #d9aa32;
-        border-radius: 19px;
-        background: linear-gradient(135deg,#078039,#fff0a0,#078039);
-      }
-
-      #member-id-card .id-photo {
-        display: block;
-        width: 100%;
-        aspect-ratio: 3 / 4;
-        object-fit: cover;
-        border-radius: 13px;
-        background: #e8f3e8;
-      }
-
-      #member-id-card .id-no-photo {
-        display: flex;
-        width: 100%;
-        aspect-ratio: 3 / 4;
-        align-items: center;
-        justify-content: center;
-        border-radius: 13px;
-        background: #e8f3e8;
-        font-size: 12px;
-      }
-
-      #member-id-card .id-status {
-        margin-top: 7px;
-        padding: 6px 3px;
-        text-align: center;
-        color: white;
-        font-size: 12px;
-        font-weight: 900;
-        border: 2px solid #e2b93c;
-        border-radius: 25px;
-        background: linear-gradient(110deg,#00632a,#00923e);
-      }
-
-      #member-id-card .id-qr-frame {
-        width: 100%;
-        max-width: 145px;
-        margin: 8px auto 0;
-        padding: 6px;
-        border: 3px solid #d9aa32;
-        border-radius: 15px;
-        background: white;
-      }
-
-      #member-id-card #member-id-qr {
-        display: flex;
-        min-height: 90px;
-        align-items: center;
-        justify-content: center;
-      }
-
-      #member-id-card #member-id-qr img,
-      #member-id-card #member-id-qr canvas {
-        display: block;
-        width: 100% !important;
-        height: auto !important;
-      }
-
-      #member-id-card .id-scan {
-        margin-top: 4px;
-        text-align: center;
-        font-size: 10px;
-        font-weight: 800;
-      }
-
-      #member-id-card .id-name {
-        margin: 0 0 7px;
-        font-size: clamp(18px, 4.4vw, 28px);
-        font-weight: 900;
-        line-height: 1.35;
-        overflow-wrap: anywhere;
-      }
-
-      #member-id-card .id-number {
-        padding: 7px 9px;
-        color: white;
-        background: linear-gradient(110deg,#00451e,#00833a);
-        border: 2px solid #d8ad35;
-        border-radius: 18px 8px 18px 8px;
-        font-size: 12px;
-        font-weight: 800;
-        overflow-wrap: anywhere;
-      }
-
-      #member-id-card .id-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 6px;
-        margin-top: 7px;
-        padding: 7px 8px;
-        border-radius: 18px 12px 18px 12px;
-        background: linear-gradient(110deg,#e7f4e3,#f7fff2);
-        font-size: 12px;
-        line-height: 1.45;
-        overflow-wrap: anywhere;
-      }
-
-      #member-id-card .id-row strong {
-        flex-shrink: 0;
-        color: #064b25;
-      }
-
-      #member-id-card .id-date {
-        margin-top: 7px;
-        padding: 7px 8px;
-        text-align: center;
-        color: #075126;
-        border: 2px solid #d9aa32;
-        border-radius: 15px 7px 15px 7px;
-        background: linear-gradient(110deg,#fff0a0,#fffdf0,#ffe28a);
-      }
-
-      #member-id-card .id-date small {
-        display: block;
+      .id-subtitle {
         font-size: 11px;
-        font-weight: 800;
-        color: #55400b;
+        color: #eee;
       }
-
-      #member-id-card .id-date strong {
-        display: block;
-        font-size: 17px;
+      .id-ribbon {
+        display: inline-block;
+        margin-top: 9px;
+        padding: 5px 20px;
+        background: linear-gradient(90deg,#947025,#f5d77c,#947025);
+        color: #14233c;
         font-weight: 900;
-        line-height: 1.5;
-      }
-
-      #member-id-card .id-org-bottom {
-        padding: 6px 10px;
-        text-align: center;
-        color: #ffe77a;
-        background: linear-gradient(110deg,#003d1c,#007b36);
-        font-size: 12px;
-        font-weight: 900;
-        line-height: 1.5;
-      }
-
-      #member-id-card .id-footer {
-        position: relative;
-        padding: 13px 10px;
-        text-align: center;
-        color: white;
-        background: linear-gradient(120deg,#003d1c,#007b36);
-        border-top: 4px solid #d9aa32;
-        font-size: 11px;
-        font-weight: 800;
-        line-height: 1.6;
-      }
-
-      #member-id-card .id-footer b {
-        display: block;
-        color: #ffe77a;
+        border-radius: 20px;
         font-size: 13px;
       }
-
-      #member-id-card .id-download {
-        display: block;
-        width: 100%;
-        margin-top: 12px;
-        padding: 12px;
-        color: white;
-        border: 2px solid #d9aa32;
-        border-radius: 30px;
-        background: linear-gradient(110deg,#00883b,#004d25);
-        font-size: 16px;
+      .id-main {
+        display: flex;
+        gap: 13px;
+        align-items: center;
+        margin: 16px 0;
+        position: relative;
+      }
+      .id-photo {
+        width: 105px;
+        height: 125px;
+        object-fit: cover;
+        border: 3px solid #e4c66e;
+        border-radius: 10px;
+        background: #fff;
+      }
+      .id-name {
+        font-size: 17px;
         font-weight: 900;
-        cursor: pointer;
+        color: #ffe39a;
+        margin-bottom: 8px;
       }
-
-      @media (max-width: 390px) {
-        #member-id-card .id-content {
-          grid-template-columns: 32% minmax(0,1fr);
-          gap: 8px;
-          padding: 5px 8px 10px;
-        }
-
-        #member-id-card .id-row {
-          font-size: 11px;
-          padding: 6px;
-        }
-
-        #member-id-card .id-number {
-          font-size: 11px;
-        }
+      .id-info {
+        font-size: 11px;
+        line-height: 1.9;
+        overflow-wrap: anywhere;
       }
-
+      .id-info b { color: #f4d887; }
+      .id-details {
+        position: relative;
+        border-top: 1px solid #d9b75c;
+        padding-top: 10px;
+        font-size: 11px;
+        line-height: 1.9;
+        overflow-wrap: anywhere;
+      }
+      .id-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 13px;
+        border-top: 1px solid #d9b75c;
+        padding-top: 12px;
+        position: relative;
+      }
+      .id-qr {
+        width: 76px;
+        height: 76px;
+        background: white;
+        padding: 4px;
+        border-radius: 6px;
+      }
+      .id-status {
+        color: #ffe39a;
+        font-weight: 900;
+        font-size: 12px;
+      }
+      .id-footer {
+        text-align: center;
+        font-size: 10px;
+        color: #f5d887;
+        margin-top: 12px;
+      }
+      .id-print {
+        display: block;
+        margin: 14px auto;
+        padding: 11px 25px;
+        border: 0;
+        border-radius: 9px;
+        background: #087653;
+        color: white;
+        font-weight: bold;
+      }
       @media print {
-        body * {
-          visibility: hidden !important;
-        }
-
-        #member-id-card,
-        #member-id-card * {
-          visibility: visible !important;
-        }
-
-        #member-id-card {
+        body * { visibility: hidden; }
+        #memberIdCard, #memberIdCard * { visibility: visible; }
+        #memberIdCard {
           position: absolute;
           left: 0;
           top: 0;
           width: 100%;
-          max-width: none;
-          margin: 0;
         }
-
-        #member-id-card .id-download {
-          display: none !important;
-        }
-
-        #member-id-card .id-card {
-          box-shadow: none;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
+        .id-print { display: none !important; }
       }
     </style>
 
-    <div class="id-card">
-      <header class="id-header">
-        <img class="id-logo" src="/logo.png" alt="সংগঠনের লোগো">
-
-        <div class="id-org">উত্তর নলটেক সমাজ কল্যাণ সংগঠন</div>
-        <div class="id-motto">একতাই শক্তি · Unity is Strength</div>
-        <div class="id-ribbon">★ সদস্য পরিচয়পত্র ★</div>
-      </header>
-
-      <div class="id-content">
-        <div class="id-left">
-          <div class="id-photo-frame">
-            ${
-              photo
-                ? `<img class="id-photo" src="${esc(photo)}" alt="সদস্যের ছবি">`
-                : `<div class="id-no-photo">ছবি নেই</div>`
-            }
-          </div>
-
-          <div class="id-status">অনুমোদিত সদস্য</div>
-
-          <div class="id-qr-frame">
-            <div id="member-id-qr"></div>
-          </div>
-
-          <div class="id-scan">স্ক্যান করে সদস্য যাচাই করুন</div>
+    <div class="member-id-card">
+      <div class="member-id-inner">
+        <div class="id-header">
+          <img class="id-logo" src="/logo.png" alt="সংগঠনের লোগো">
+          <div class="id-org">উত্তর নলটেক সমাজ কল্যাণ সংগঠন</div>
+          <div class="id-subtitle">একতাই শক্তি • মানবতার সেবায় আমরা</div>
+          <div class="id-ribbon">ডিজিটাল সদস্য পরিচয়পত্র</div>
         </div>
 
-        <div class="id-right">
-          <div class="id-name">${esc(name)}</div>
-
-          <div class="id-number">
-            সদস্য আইডি: ${esc(memberId)}
-          </div>
-
-          <div class="id-row">
-            <strong>মোবাইল:</strong> ${esc(phone)}
-          </div>
-
-          <div class="id-row">
-            <strong>রক্তের গ্রুপ:</strong> ${esc(blood)}
-          </div>
-
-          <div class="id-row">
-            <strong>ঠিকানা:</strong> ${esc(address)}
-          </div>
-
-          <div class="id-row">
-            <strong>পেশা:</strong> ${esc(occupation)}
-          </div>
-
-          <div class="id-row">
-            <strong>সদস্যপদ:</strong> অনুমোদিত
-          </div>
-
-          <div class="id-date">
-            <small>📅 যোগদানের তারিখ</small>
-            <strong>${esc(joinDate)}</strong>
+        <div class="id-main">
+          <img class="id-photo"
+            src="${safe(member.photo || '/logo.png')}"
+            alt="সদস্যের ছবি">
+          <div class="id-info">
+            <div class="id-name">${safe(member.name)}</div>
+            <div><b>সদস্য আইডি:</b> ${safe(member.id)}</div>
+            <div><b>মোবাইল:</b> ${safe(member.phone)}</div>
+            <div><b>রক্তের গ্রুপ:</b> ${safe(member.blood)}</div>
+            <div><b>পেশা:</b> ${safe(member.occupation)}</div>
           </div>
         </div>
-       </div>
 
-       
-        <footer class="id-footer">
-        সামাজিক উন্নয়ন, মানবকল্যাণ ও ঐক্যের জন্য আমরা একসাথে
-        <b>উত্তর নলটেক সমাজ কল্যাণ সংগঠন</b>
-      </footer>
+        <div class="id-details">
+          <div><b>ঠিকানা:</b> ${safe(member.address)}</div>
+          <div><b>যোগদানের তারিখ:</b> ${safe(member.joined)}</div>
+        </div>
+
+        <div class="id-bottom">
+          <div>
+            <div class="id-status">
+              ${member.status === 'approved' ? '✓ অনুমোদিত সদস্য' : 'অনুমোদন অপেক্ষমাণ'}
+            </div>
+            <div class="id-info">QR স্ক্যান করে সদস্য যাচাই করুন</div>
+          </div>
+          <img class="id-qr" src="${qrImage}" alt="QR Code">
+        </div>
+
+        <div class="id-footer">
+          মানবতার সেবায় • ঐক্য • সহযোগিতা • কল্যাণ
+        </div>
+      </div>
     </div>
- 
-   <button type="button" class="id-download" id="member-id-download">
-      ⬇ পরিচয়পত্র PDF ডাউনলোড করুন
+
+    <button class="id-print" onclick="window.print()">
+      পরিচয়পত্র প্রিন্ট করুন
     </button>
   `;
-
-  profilePanel.insertAdjacentElement('afterend', card);
-
-  card.querySelector('#member-id-download').addEventListener('click', () => {
-    window.print();
-  });
-
-  const qrBox = card.querySelector('#member-id-qr');
-  const verifyURL =
-    'https://uttar-noltek-app.vercel.app/?verify=' +
-    encodeURIComponent(currentUser.uid);
-
-  function makeQR() {
-    if (typeof QRCode === 'undefined') {
-      qrBox.textContent = 'QR তৈরি হয়নি';
-      return;
-    }
-
-    new QRCode(qrBox, {
-      text: verifyURL,
-      width: 120,
-      height: 120,
-      correctLevel: QRCode.CorrectLevel.M
-    });
-  }
-
-  if (typeof QRCode !== 'undefined') {
-    makeQR();
-  } else {
-    const script = document.createElement('script');
-    script.src =
-      'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-
-    script.onload = makeQR;
-    script.onerror = () => {
-      qrBox.textContent = 'QR লোড হয়নি';
-    };
-
-    document.head.appendChild(script);
-  }
 }
-
+  
 async function memberView() {
   const menuItems = [
     { id: 'home', icon: '⌂', label: 'হোম' },
