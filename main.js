@@ -1,6 +1,6 @@
 
 import './style.css';
-import { auth, db } from './firebase.js';
+import { auth, db, storage } from './firebase.js';
 
 import {
   RecaptchaVerifier,
@@ -29,6 +29,11 @@ import {
   query
 } from 'firebase/firestore';
 
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from 'firebase/storage';
 const $ = s => document.querySelector(s);
 
 let confirmation = null;
