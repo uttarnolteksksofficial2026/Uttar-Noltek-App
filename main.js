@@ -1387,14 +1387,37 @@ async function refreshAdmin() {
         changeStatus(button.dataset.reject, 'rejected');
     });
 
-    $('#memberList').innerHTML = members.length
-      ? members.map(u => `
-        <div class="noticeitem">
-          <b>${escapeHTML(u.phone || '')}</b>
-          <p>সদস্য আইডি: ${escapeHTML(u.id.slice(0, 10).toUpperCase())}</p>
-          <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
-        </div>`).join('')
-      : 'কোনো অনুমোদিত সদস্য নেই।';
+$('#memberList').innerHTML = members.length
+  ? members.map(u => `
+    <div class="noticeitem">
+      <b>${escapeHTML(u.phone || '')}</b>
+      <p>সদস্য আইডি: ${escapeHTML(u.id.slice(0, 10).toUpperCase())}</p>
+      <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
+      <button class="secondary" data-deactivate="${escapeHTML(u.id)}">
+        সদস্য নিষ্ক্রিয় করুন
+      </button>
+    </div>`).join('')
+  : 'কোনো অনুমোদিত সদস্য নেই।';
+
+$('#memberList').querySelectorAll('[data-deactivate]').forEach(button => {
+  button.onclick = async () => {
+    const id = button.dataset.deactivate;
+
+    if (!confirm('এই সদস্যকে নিষ্ক্রিয় করতে চান?')) return;
+
+    try {
+      await updateDoc(doc(db, 'users', id), {
+        status: 'inactive'
+      });
+
+      button.closest('.noticeitem').remove();
+      alert('সদস্য নিষ্ক্রিয় করা হয়েছে।');
+    } catch (error) {
+      console.error(error);
+      alert('নিষ্ক্রিয় করা যায়নি: ' + error.message);
+    }
+  };
+});
 
     const options = members.map(u => `
       <option value="${escapeHTML(u.id)}"
