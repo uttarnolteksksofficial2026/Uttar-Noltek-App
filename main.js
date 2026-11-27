@@ -31,7 +31,7 @@ import {
 
 import {
   ref,
-  uploadBytes,
+  uploadBytesResumable,
   getDownloadURL
 } from 'firebase/storage';
 const $ = s => document.querySelector(s);
@@ -1302,6 +1302,7 @@ const photoInput = $('#profilePhotoInput');
 const uploadButton = $('#uploadProfilePhoto');
 const photoMessage = $('#photoMessage');
 
+
 uploadButton.onclick = async () => {
   const file = photoInput.files[0];
 
@@ -1321,7 +1322,7 @@ uploadButton.onclick = async () => {
   }
 
   uploadButton.disabled = true;
-  photoMessage.textContent = 'ছবি আপলোড হচ্ছে...';
+  photoMessage.textContent = 'আপলোড শুরু হচ্ছে...';
 
   try {
     const photoRef = ref(
@@ -1329,9 +1330,24 @@ uploadButton.onclick = async () => {
       `profilePhotos/${currentUser.uid}/${Date.now()}`
     );
 
-    await uploadBytes(photoRef, file);
+    const uploadTask = uploadBytesResumable(photoRef, file);
 
-    const photoURL = await getDownloadURL(photoRef);
+    await new Promise((resolve, reject) => {
+      uploadTask.on(
+        'state_changed',
+        snapshot => {
+          const percent = Math.round(
+            snapshot.bytesTransferred / snapshot.totalBytes * 100
+          );
+
+          photoMessage.textContent = `ছবি আপলোড হচ্ছে... ${percent}%`;
+        },
+        error => reject(error),
+        () => resolve()
+      );
+    });
+
+    const photoURL = await getDownloadURL(uploadTask.snapshot.ref);
 
     await updateDoc(doc(db, 'users', currentUser.uid), {
       photoURL,
@@ -1346,11 +1362,12 @@ uploadButton.onclick = async () => {
 
   } catch (error) {
     console.error('PHOTO UPLOAD ERROR:', error);
-    photoMessage.textContent = 'ছবি আপলোড হয়নি: ' + error.message;
+    photoMessage.textContent = 'আপলোড ব্যর্থ: ' + error.message;
   } finally {
     uploadButton.disabled = false;
   }
 };
+    
   try {
     const [dues, payments, notices, activities] = await Promise.all([
       getList('dues', [where('memberUid', '==', currentUser.uid)]),
