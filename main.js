@@ -2170,7 +2170,9 @@ async function memberView() {
 
   $('#detectLocation').onclick = detectPrayerLocation;
 
+  setTimeout(() => {
   setupMemberIdCard();
+}, 100);
 }
 
 /* ADMIN DASHBOARD */
