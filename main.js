@@ -2007,7 +2007,9 @@ async function memberView() {
       member.status === 'approved' && member.role !== 'admin'
     );
     $('#memberDashboardCount').textContent =
-      directoryMembers.length.toLocaleString('bn-BD');
+  directoryMembers.length > 0
+    ? directoryMembers.length.toLocaleString('bn-BD')
+    : 'লোড হয়নি';  
     renderDirectory();
   } catch (error) {
     console.error('MEMBER DIRECTORY ERROR:', error);
