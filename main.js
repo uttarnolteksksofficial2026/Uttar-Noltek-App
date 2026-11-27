@@ -2156,7 +2156,7 @@ async function adminView() {
     { id: 'rulesAdmin', icon: '📜', label: 'নিয়ম-কানুন পরিচালনা' },
     { id: 'constitutionAdmin', icon: '📖', label: 'গঠনতন্ত্র পরিচালনা' },
     { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
-  ];
+  ];{ id: 'idcards', icon: '🪪', label: 'সদস্য আইডি কার্ড' },
 
   app.innerHTML = baseHeader() + menuDrawer(menuItems) + `
     <main class="app-main">
@@ -2341,8 +2341,226 @@ async function adminView() {
   $('#saveConstitution').onclick = saveConstitution;
   $('#cancelConstitutionEdit').onclick = cancelConstitutionEdit;
   $('#saveConstitutionStatus').onclick = saveConstitutionStatus;
-
+  
   await refreshAdmin();
+}
+
+async function setupAdminMemberCards() {
+  const list = document.getElementById('adminCardList');
+  const search = document.getElementById('adminCardSearch');
+  const preview = document.getElementById('adminCardPreview');
+  const previewContent = document.getElementById('adminCardPreviewContent');
+  const printButton = document.getElementById('adminCardPrint');
+
+  if (!list || !search || !preview || !previewContent) return;
+
+  let members = [];
+
+  const esc = value => String(value || 'তথ্য নেই').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
+
+  try {
+    const users = await getList('users');
+
+    members = users.filter(member =>
+      member.status === 'approved' &&
+      member.role !== 'admin'
+    );
+
+    if (!members.length) {
+      list.innerHTML = '<p>অনুমোদিত সদস্য পাওয়া যায়নি।</p>';
+      return;
+    }
+
+    function renderList() {
+      const term = search.value.trim().toLowerCase();
+
+      const filtered = members.filter(member => {
+        const name = member.fullName || member.name || '';
+        const id = member.memberId || member.id || '';
+        return name.toLowerCase().includes(term) ||
+          String(id).toLowerCase().includes(term);
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = '<p>কোনো সদস্য পাওয়া যায়নি।</p>';
+        return;
+      }
+
+      list.innerHTML = filtered.map((member, index) => {
+        const name = member.fullName || member.name || 'নাম নেই';
+        const id = member.memberId || member.id || 'আইডি নেই';
+
+        return `
+          <div class="panel" style="margin:10px 0">
+            <b>${esc(name)}</b>
+            <p>সদস্য আইডি: ${esc(id)}</p>
+            <button class="primary" data-card-index="${index}">
+              আইডি কার্ড দেখুন
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      list.querySelectorAll('[data-card-index]').forEach(button => {
+        button.onclick = () => {
+          const filtered = members.filter(member => {
+            const term = search.value.trim().toLowerCase();
+            const name = (member.fullName || member.name || '').toLowerCase();
+            const id = String(member.memberId || member.id || '').toLowerCase();
+            return name.includes(term) || id.includes(term);
+          });
+
+          const member = filtered[Number(button.dataset.cardIndex)];
+          if (member) showCard(member);
+        };
+      });
+    }
+
+    function showCard(member) {
+      const name = member.fullName || member.name || 'সদস্যের নাম';
+      const id = member.memberId || member.id || 'আইডি নেই';
+      const phone = member.phone || member.phoneNumber || '';
+      const blood = member.bloodGroup || '';
+      const address = member.address || '';
+      const occupation = member.occupation || '';
+      const photo = member.photoURL || member.photoUrl || member.photo || '';
+
+      let joinDate = 'তথ্য নেই';
+
+      if (member.createdAt) {
+        const date = member.createdAt.toDate
+          ? member.createdAt.toDate()
+          : new Date(member.createdAt);
+
+        if (!isNaN(date.getTime())) {
+          joinDate = date.toLocaleDateString('bn-BD');
+        }
+      }
+
+      previewContent.innerHTML = `
+        <div style="
+          max-width:480px;
+          margin:auto;
+          border:3px solid #d7a72c;
+          border-radius:22px;
+          overflow:hidden;
+          background:white;
+          color:#064b25;
+          font-family:system-ui,sans-serif;
+          box-shadow:0 5px 18px #0002
+        ">
+          <div style="
+            text-align:center;
+            padding:15px 10px 25px;
+            color:white;
+            background:linear-gradient(130deg,#003d1c,#00813a);
+            clip-path:polygon(0 0,100% 0,100% 80%,70% 100%,0 82%)
+          ">
+            <img src="/logo.png" style="
+              width:65px;height:65px;object-fit:contain;
+              border:3px solid #e5bd45;border-radius:50%;
+              background:white;padding:3px
+            ">
+            <h3 style="margin:8px 0 3px">
+              উত্তর নলটেক সমাজ কল্যাণ সংগঠন
+            </h3>
+            <small>একতাই শক্তি · Unity is Strength</small>
+            <div style="
+              display:inline-block;margin-top:10px;padding:7px 20px;
+              background:linear-gradient(90deg,#e9b735,#fff0a0);
+              color:#075126;font-weight:900;border-radius:10px 20px
+            ">★ সদস্য পরিচয়পত্র ★</div>
+          </div>
+
+          <div style="
+            display:grid;grid-template-columns:34% 1fr;
+            gap:10px;padding:10px
+          ">
+            <div>
+              <div style="
+                padding:4px;border:3px solid #d9aa32;
+                border-radius:15px;background:#e8f3e8
+              ">
+                ${
+                  photo
+                    ? `<img src="${esc(photo)}" style="
+                        width:100%;aspect-ratio:3/4;object-fit:cover;
+                        border-radius:10px
+                      ">`
+                    : `<div style="
+                        aspect-ratio:3/4;display:flex;
+                        align-items:center;justify-content:center;
+                        font-size:11px
+                      ">ছবি নেই</div>`
+                }
+              </div>
+
+              <div style="
+                margin-top:6px;padding:5px;text-align:center;
+                color:white;background:#00813a;border-radius:20px;
+                font-size:11px;font-weight:900
+              ">অনুমোদিত সদস্য</div>
+            </div>
+
+            <div style="min-width:0">
+              <h3 style="margin:0 0 6px;overflow-wrap:anywhere">
+                ${esc(name)}
+              </h3>
+
+              <div style="
+                padding:7px;color:white;background:#00652c;
+                border:2px solid #d9aa32;border-radius:12px;
+                font-size:11px;overflow-wrap:anywhere
+              ">সদস্য আইডি: ${esc(id)}</div>
+
+              <div style="font-size:12px;line-height:1.5">
+                <p>মোবাইল: ${esc(phone)}</p>
+                <p>রক্তের গ্রুপ: ${esc(blood)}</p>
+                <p>ঠিকানা: ${esc(address)}</p>
+                <p>পেশা: ${esc(occupation)}</p>
+                <p>সদস্যপদ: অনুমোদিত</p>
+                <p>যোগদানের তারিখ: ${esc(joinDate)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="
+            text-align:center;padding:8px;
+            background:#fff0a0;color:#075126;
+            font-weight:900;font-size:12px
+          ">উত্তর নলটেক সমাজ কল্যাণ সংগঠন</div>
+
+          <div style="
+            text-align:center;padding:12px;
+            background:#00451e;color:white;font-size:11px
+          ">
+            সামাজিক উন্নয়ন, মানবকল্যাণ ও ঐক্যের জন্য আমরা একসাথে
+          </div>
+        </div>
+      `;
+
+      preview.hidden = false;
+      preview.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    search.oninput = renderList;
+
+    printButton.onclick = () => {
+      window.print();
+    };
+
+    renderList();
+
+  } catch (error) {
+    console.error(error);
+    list.innerHTML = '<p>সদস্য তালিকা লোড করা যায়নি।</p>';
+  }
 }
 
 /* DEFAULT CONSTITUTION STORAGE */
