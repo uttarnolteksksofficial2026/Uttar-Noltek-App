@@ -251,18 +251,20 @@ function loginView() {
       }
 
       .village-backdrop {
-        position: absolute;
-        inset: 42% 0 0;
-        background:
-          linear-gradient(
-            to bottom,
-            rgba(0, 145, 125, .18),
-            rgba(0, 80, 75, .48)
-          ),
-          url('/village.jpg') center bottom / cover no-repeat;
-        opacity: .82;
-        pointer-events: none;
-      }
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0, 145, 125, .35),
+      rgba(0, 80, 75, .45)
+    ),
+    url('/village.jpg') center center / cover no-repeat;
+  opacity: .35;
+  filter: blur(3px);
+  transform: scale(1.04);
+  pointer-events: none;
+}
 
       .welcome-screen::before {
         content: "";
