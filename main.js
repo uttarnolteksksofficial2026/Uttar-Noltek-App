@@ -2345,7 +2345,6 @@ async function adminView() {
   
   await refreshAdmin();
 }
-
 async function setupAdminMemberCards() {
   const list = document.getElementById('adminCardList');
   const search = document.getElementById('adminCardSearch');
