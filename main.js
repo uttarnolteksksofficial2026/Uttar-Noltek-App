@@ -1175,6 +1175,7 @@ async function memberView() {
     { id: 'activities', icon: '☆', label: 'কার্যক্রম' },
     { id: 'rules', icon: '📜', label: 'নিয়ম-কানুন' },
     { id: 'constitution', icon: '📖', label: 'গঠনতন্ত্র' },
+    { id: 'prayer', icon: '🕌', label: 'নামাজের সময়' },
     { id: 'contact', icon: '☎', label: 'যোগাযোগ' }
   ];
 
