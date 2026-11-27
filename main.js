@@ -1576,7 +1576,7 @@ async function setupMemberIdCard(profile = {}) {
                   উত্তর নলটেক<br>সমাজ কল্যাণ সংগঠন
                 </div>
                 <div class="un-motto">
-                  সেবা • সংহতি • উন্নয়ন
+                  একতাই শক্তি 
                 </div>
               </div>
             </div>
@@ -1679,25 +1679,22 @@ async function setupMemberIdCard(profile = {}) {
             </div>
 
             <div class="un-back-footer">
-              “সবার পাশে, সর্বসময়<br>
-              উত্তর নলটেক সমাজ কল্যাণ সংগঠন”
-            </div>
+  “মানবতাই আমাদের অঙ্গীকার<br>
+  উত্তর নলটেক সমাজ কল্যাণ সংগঠন”
+</div>
 
-          </div>
-          <div class="un-bottom-design"></div>
-        </div>
-      </div>
+</div>
+</div>
 
-      <div class="un-card-actions">
-        <button type="button" onclick="window.print()">
-          🖨️ কার্ড প্রিন্ট করুন
-        </button>
-      </div>
+<div class="un-card-actions">
+  <button type="button" onclick="window.print()">
+    🖨️ কার্ড প্রিন্ট করুন
+  </button>
+</div>
 
-    </div>
-  `;
+</div>
+`;
 }
-  
 async function memberView() {
   const menuItems = [
     { id: 'home', icon: '⌂', label: 'হোম' },
