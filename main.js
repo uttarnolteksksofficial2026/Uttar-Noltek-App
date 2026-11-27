@@ -1505,10 +1505,6 @@ async function loadPrayerTimes(lat, lon) {
 iftarTime.textContent =
   '🌙 আজকের ইফতারের সময়: ' + format12Hour(times.Maghrib);
     
-
-    iftarTime.textContent =
-      '🌙 আজকের ইফতারের সময়: ' + times.Maghrib;
-
   } catch (error) {
     prayerTimes.textContent =
       'নামাজের সময় লোড হয়নি। আবার চেষ্টা করুন।';
