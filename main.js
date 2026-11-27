@@ -1320,6 +1320,88 @@ async function memberView() {
   bindLogout();
   setupNavigation();
   
+  // নামাজের সময়সূচী
+async function loadPrayerTimes(lat, lon) {
+  const prayerLocation = $('#prayerLocation');
+  const prayerTimes = $('#prayerTimes');
+  const iftarTime = $('#iftarTime');
+
+  prayerLocation.textContent = 'আপনার লোকেশন শনাক্ত হয়েছে';
+
+  prayerTimes.textContent = 'সময়সূচী লোড হচ্ছে...';
+  iftarTime.textContent = '';
+
+  try {
+    const today = new Date();
+
+    const date =
+      String(today.getDate()).padStart(2, '0') + '-' +
+      String(today.getMonth() + 1).padStart(2, '0') + '-' +
+      today.getFullYear();
+
+    const url =
+      `https://api.aladhan.com/v1/timings/${date}` +
+      `?latitude=${lat}&longitude=${lon}&method=3`;
+
+    const response = await fetch(url);
+    const result = await response.json();
+
+    if (result.code !== 200) {
+      throw new Error('সময়সূচী পাওয়া যায়নি');
+    }
+
+    const times = result.data.timings;
+
+    prayerTimes.innerHTML = `
+      <p>🌅 ফজর: ${times.Fajr}</p>
+      <p>☀️ সূর্যোদয়: ${times.Sunrise}</p>
+      <p>🕛 যোহর: ${times.Dhuhr}</p>
+      <p>🌤️ আসর: ${times.Asr}</p>
+      <p>🌇 মাগরিব: ${times.Maghrib}</p>
+      <p>🌙 এশা: ${times.Isha}</p>
+    `;
+
+    iftarTime.textContent =
+      '🌙 আজকের ইফতারের সময়: ' + times.Maghrib;
+
+  } catch (error) {
+    prayerTimes.textContent =
+      'নামাজের সময় লোড হয়নি। আবার চেষ্টা করুন।';
+  }
+}
+
+function detectPrayerLocation() {
+  const prayerLocation = $('#prayerLocation');
+
+  prayerLocation.textContent = 'লোকেশন শনাক্ত হচ্ছে...';
+
+  if (!navigator.geolocation) {
+    prayerLocation.textContent =
+      'আপনার ব্রাউজারে লোকেশন সুবিধা নেই।';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      loadPrayerTimes(lat, lon);
+    },
+    () => {
+      prayerLocation.textContent =
+        'লোকেশন অনুমতি দিন অথবা HTTPS সাইটে খুলুন।';
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000
+    }
+  );
+}
+
+$('#detectLocation').onclick = detectPrayerLocation;
+
+detectPrayerLocation();
 const photoInput = $('#profilePhotoInput');
 const uploadButton = $('#uploadProfilePhoto');
 const photoMessage = $('#photoMessage');
