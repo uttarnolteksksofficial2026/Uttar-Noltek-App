@@ -1845,7 +1845,59 @@ async function deleteConstitution(id) {
 }
 
 /* APP START */
+async function registerMember() {
+  const message = document.querySelector('#message');
 
+  const fullName = document.querySelector('#fullName')?.value.trim();
+  const email = document.querySelector('#email')?.value.trim();
+  const password = document.querySelector('#password')?.value;
+  const phone = document.querySelector('#memberPhone')?.value.trim();
+  const address = document.querySelector('#memberAddress')?.value.trim();
+  const bloodGroup = document.querySelector('#bloodGroup')?.value;
+  const occupation = document.querySelector('#memberOccupation')?.value.trim();
+
+  if (!fullName || !email || !password || !phone || !address || !bloodGroup) {
+    message.textContent = 'সব প্রয়োজনীয় তথ্য পূরণ করুন।';
+    return;
+  }
+
+  if (password.length < 6) {
+    message.textContent = 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।';
+    return;
+  }
+
+  try {
+    message.textContent = 'অ্যাকাউন্ট তৈরি হচ্ছে...';
+
+    const credential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
+    await setDoc(doc(db, 'users', credential.user.uid), {
+      fullName,
+      email,
+      phone,
+      address,
+      bloodGroup,
+      occupation,
+      role: 'member',
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+
+    message.textContent =
+      'অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদনের অপেক্ষায় থাকুন।';
+
+  } catch (error) {
+    console.error(error);
+    message.textContent =
+      error.code === 'auth/email-already-in-use'
+        ? 'এই ইমেইলে আগে থেকেই অ্যাকাউন্ট আছে।'
+        : error.message;
+  }
+}
 onAuthStateChanged(auth, async user => {
   if (!user) {
     currentUser = null;
