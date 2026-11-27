@@ -256,8 +256,7 @@ function loginView() {
       .welcome-content {
         text-align: center;
         margin-top: 55px;
-      }
-      .welcome-content h1 {
+      } .welcome-content h1 {
   color: #FFD700;
 }
 
