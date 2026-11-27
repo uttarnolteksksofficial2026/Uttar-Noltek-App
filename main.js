@@ -1173,29 +1173,27 @@ function setupMemberIdCard() {
 
   if (!currentUser || !profile) return;
 
-  const headings = [...document.querySelectorAll('h2')];
-  const profileHeading = headings.find(
-    h => h.textContent.trim() === 'আমার প্রোফাইল'
-  );
-  const profilePanel = profileHeading?.closest('.panel');
+  const heading = [...document.querySelectorAll('h2')]
+    .find(h => h.textContent.trim() === 'আমার প্রোফাইল');
 
+  const profilePanel = heading?.closest('.panel');
   if (!profilePanel) return;
 
-  const esc = value => String(value || 'তথ্য নেই')
-    .replace(/[&<>"']/g, ch => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }[ch]));
+  const esc = value => String(value || 'তথ্য নেই').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
 
   const name = profile.fullName || profile.name || 'সদস্যের নাম';
   const memberId = profile.memberId || currentUser.uid;
   const phone = profile.phone || currentUser.phoneNumber || 'তথ্য নেই';
-  const address = profile.address || 'তথ্য নেই';
   const blood = profile.bloodGroup || 'তথ্য নেই';
+  const address = profile.address || 'তথ্য নেই';
   const occupation = profile.occupation || 'তথ্য নেই';
+  const photo = profile.photoURL || profile.photoUrl || '';
 
   let joinDate = 'তথ্য নেই';
   if (profile.createdAt) {
@@ -1212,102 +1210,111 @@ function setupMemberIdCard() {
     }
   }
 
-  const photo = profile.photoURL || profile.photoUrl || '';
-
   const card = document.createElement('section');
   card.id = 'member-id-card';
+
   card.innerHTML = `
     <style>
       #member-id-card {
-        max-width: 760px;
-        margin: 22px auto;
+        width: 100%;
+        max-width: 620px;
+        margin: 16px auto;
         font-family: system-ui, sans-serif;
-        color: #064c25;
+        color: #064b25;
+      }
+
+      #member-id-card * {
+        box-sizing: border-box;
       }
 
       #member-id-card .id-card {
         position: relative;
         overflow: hidden;
+        border: 3px solid #d7a72c;
+        border-radius: 25px;
         background: #fff;
-        border: 4px solid #d9aa32;
-        border-radius: 28px;
-        box-shadow: 0 8px 25px #0002;
+        box-shadow: 0 6px 18px #0002;
       }
 
-      #member-id-card .id-top {
+      #member-id-card .id-header {
         position: relative;
-        padding: 20px 14px 32px;
+        overflow: hidden;
+        padding: 16px 10px 28px;
         text-align: center;
         color: white;
         background:
-          linear-gradient(135deg, transparent 0 18%, #ffffff12 18% 25%, transparent 25%),
-          linear-gradient(145deg, #003d1c, #00833b 55%, #005122);
-        clip-path: polygon(0 0,100% 0,100% 83%,70% 100%,0 84%);
+          linear-gradient(135deg, transparent 0 18%, #ffffff12 18% 28%, transparent 28%),
+          linear-gradient(125deg, #003d1c, #007b36 65%, #005522);
+        clip-path: polygon(0 0,100% 0,100% 78%,70% 100%,0 82%);
       }
 
-      #member-id-card .id-top:after {
+      #member-id-card .id-header:before {
         content: "";
         position: absolute;
+        width: 120%;
+        height: 30px;
         left: -10%;
-        right: -10%;
-        bottom: 12px;
-        height: 12px;
-        background: linear-gradient(90deg,#ffe98b,#c48b19,#fff1a8);
-        transform: rotate(-3deg);
+        bottom: 9px;
+        background: linear-gradient(90deg,#ffe99a,#c58c1d,#fff0a2);
+        transform: rotate(-4deg);
       }
 
       #member-id-card .id-logo {
-        width: 76px;
-        height: 76px;
+        position: relative;
+        width: 66px;
+        height: 66px;
         object-fit: contain;
-        border-radius: 50%;
-        background: white;
-        border: 4px solid #e8c45a;
         padding: 3px;
+        border-radius: 50%;
+        border: 4px solid #e5bd45;
+        background: white;
       }
 
       #member-id-card .id-org {
-        font-size: clamp(17px, 4vw, 27px);
-        font-weight: 900;
-        margin: 8px 0 3px;
+        position: relative;
+        margin: 7px 0 2px;
+        font-size: clamp(16px, 3.8vw, 25px);
         line-height: 1.35;
+        font-weight: 900;
       }
 
       #member-id-card .id-motto {
-        font-size: 13px;
-        opacity: .95;
+        position: relative;
+        font-size: 12px;
+        font-weight: 600;
       }
 
       #member-id-card .id-ribbon {
+        position: relative;
         display: inline-block;
-        margin-top: 12px;
-        padding: 8px 25px;
-        color: #064c25;
-        background: linear-gradient(90deg,#e8b83b,#fff0a2,#dba52a);
-        border: 2px solid #fff1a6;
-        border-radius: 10px 22px 10px 22px;
-        font-size: 19px;
+        margin-top: 10px;
+        padding: 7px 23px;
+        color: #075126;
+        font-size: 18px;
         font-weight: 900;
-        transform: skew(-5deg);
+        background: linear-gradient(100deg,#e9b735,#fff0a0,#d9a32a);
+        border: 2px solid #fff0a2;
+        border-radius: 9px 20px 9px 20px;
+        transform: skew(-4deg);
       }
 
       #member-id-card .id-content {
         display: grid;
-        grid-template-columns: minmax(115px, 34%) 1fr;
-        gap: 13px;
-        padding: 8px 14px 18px;
+        grid-template-columns: 34% minmax(0,1fr);
+        gap: 11px;
+        padding: 6px 12px 12px;
       }
 
-      #member-id-card .id-left {
+      #member-id-card .id-left,
+      #member-id-card .id-right {
         min-width: 0;
-        text-align: center;
       }
 
       #member-id-card .id-photo-frame {
-        padding: 6px;
-        border: 3px solid #d5a72d;
-        border-radius: 22px;
-        background: linear-gradient(135deg,#087b35,#fff1a2,#087b35);
+        padding: 5px;
+        border: 3px solid #d9aa32;
+        border-radius: 19px;
+        background: linear-gradient(135deg,#078039,#fff0a0,#078039);
       }
 
       #member-id-card .id-photo {
@@ -1315,162 +1322,194 @@ function setupMemberIdCard() {
         width: 100%;
         aspect-ratio: 3 / 4;
         object-fit: cover;
-        border-radius: 16px;
+        border-radius: 13px;
         background: #e8f3e8;
       }
 
-      #member-id-card .id-status {
-        margin-top: 8px;
-        padding: 7px 4px;
-        border-radius: 25px;
-        color: white;
+      #member-id-card .id-no-photo {
+        display: flex;
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        align-items: center;
+        justify-content: center;
+        border-radius: 13px;
+        background: #e8f3e8;
         font-size: 12px;
-        font-weight: 800;
-        background: linear-gradient(120deg,#00652a,#009344);
-        border: 2px solid #e8c34b;
       }
 
-      #member-id-card .id-qr-box {
-        margin: 10px auto 0;
-        padding: 7px;
+      #member-id-card .id-status {
+        margin-top: 7px;
+        padding: 6px 3px;
+        text-align: center;
+        color: white;
+        font-size: 12px;
+        font-weight: 900;
+        border: 2px solid #e2b93c;
+        border-radius: 25px;
+        background: linear-gradient(110deg,#00632a,#00923e);
+      }
+
+      #member-id-card .id-qr-frame {
+        width: 100%;
         max-width: 145px;
-        background: white;
-        border: 3px solid #d7a72c;
+        margin: 8px auto 0;
+        padding: 6px;
+        border: 3px solid #d9aa32;
         border-radius: 15px;
+        background: white;
       }
 
       #member-id-card #member-id-qr {
-        width: 100%;
-        min-height: 100px;
         display: flex;
+        min-height: 90px;
         align-items: center;
         justify-content: center;
       }
 
       #member-id-card #member-id-qr img,
       #member-id-card #member-id-qr canvas {
-        max-width: 100%;
-        height: auto;
+        display: block;
+        width: 100% !important;
+        height: auto !important;
       }
 
       #member-id-card .id-scan {
+        margin-top: 4px;
+        text-align: center;
         font-size: 10px;
-        font-weight: 700;
-        margin-top: 5px;
-      }
-
-      #member-id-card .id-right {
-        min-width: 0;
+        font-weight: 800;
       }
 
       #member-id-card .id-name {
-        font-size: clamp(19px, 4.4vw, 30px);
+        margin: 0 0 7px;
+        font-size: clamp(18px, 4.4vw, 28px);
         font-weight: 900;
         line-height: 1.35;
         overflow-wrap: anywhere;
-        margin: 2px 0 8px;
       }
 
       #member-id-card .id-number {
-        padding: 8px 10px;
+        padding: 7px 9px;
         color: white;
-        background: linear-gradient(110deg,#00451e,#00843b);
-        border: 2px solid #d9b13b;
+        background: linear-gradient(110deg,#00451e,#00833a);
+        border: 2px solid #d8ad35;
         border-radius: 18px 8px 18px 8px;
+        font-size: 12px;
         font-weight: 800;
-        font-size: 13px;
         overflow-wrap: anywhere;
       }
 
       #member-id-card .id-row {
         display: flex;
         align-items: flex-start;
-        gap: 8px;
-        margin-top: 8px;
-        padding: 8px;
-        background: linear-gradient(110deg,#e9f4e5,#f8fff5);
-        border-radius: 13px 20px 13px 20px;
+        gap: 6px;
+        margin-top: 7px;
+        padding: 7px 8px;
+        border-radius: 18px 12px 18px 12px;
+        background: linear-gradient(110deg,#e7f4e3,#f7fff2);
         font-size: 12px;
-        line-height: 1.5;
+        line-height: 1.45;
         overflow-wrap: anywhere;
       }
 
       #member-id-card .id-row strong {
-        color: #064c25;
         flex-shrink: 0;
+        color: #064b25;
       }
 
       #member-id-card .id-date {
-        margin: 0 14px 18px;
-        padding: 12px 10px;
+        margin-top: 7px;
+        padding: 7px 8px;
         text-align: center;
-        border: 3px solid #d9aa32;
-        border-radius: 22px 8px 22px 8px;
-        background: linear-gradient(110deg,#fff0a7,#fffdf0,#ffe28a);
-        font-weight: 900;
-        color: #07552a;
+        color: #075126;
+        border: 2px solid #d9aa32;
+        border-radius: 15px 7px 15px 7px;
+        background: linear-gradient(110deg,#fff0a0,#fffdf0,#ffe28a);
       }
 
       #member-id-card .id-date small {
         display: block;
-        color: #4e3b06;
-        font-size: 13px;
+        font-size: 11px;
+        font-weight: 800;
+        color: #55400b;
       }
 
-      #member-id-card .id-date span {
+      #member-id-card .id-date strong {
         display: block;
-        font-size: 21px;
-        margin-top: 4px;
+        font-size: 17px;
+        font-weight: 900;
+        line-height: 1.5;
+      }
+
+      #member-id-card .id-org-bottom {
+        padding: 6px 10px;
+        text-align: center;
+        color: #ffe77a;
+        background: linear-gradient(110deg,#003d1c,#007b36);
+        font-size: 12px;
+        font-weight: 900;
+        line-height: 1.5;
       }
 
       #member-id-card .id-footer {
-        padding: 15px 12px;
+        position: relative;
+        padding: 13px 10px;
         text-align: center;
         color: white;
-        background: linear-gradient(135deg,#003d1c,#007c37);
-        border-top: 5px solid #d9aa32;
-        font-size: 12px;
+        background: linear-gradient(120deg,#003d1c,#007b36);
+        border-top: 4px solid #d9aa32;
+        font-size: 11px;
         font-weight: 800;
+        line-height: 1.6;
       }
 
       #member-id-card .id-footer b {
         display: block;
         color: #ffe77a;
-        margin-top: 4px;
+        font-size: 13px;
       }
 
       #member-id-card .id-download {
+        display: block;
         width: 100%;
-        margin-top: 15px;
-        padding: 14px;
-        border: 2px solid #d8b03e;
-        border-radius: 35px;
+        margin-top: 12px;
+        padding: 12px;
         color: white;
-        background: linear-gradient(110deg,#008c3c,#005326);
-        font-size: 17px;
+        border: 2px solid #d9aa32;
+        border-radius: 30px;
+        background: linear-gradient(110deg,#00883b,#004d25);
+        font-size: 16px;
         font-weight: 900;
         cursor: pointer;
-        box-shadow: 0 5px 12px #0002;
       }
 
       @media (max-width: 390px) {
         #member-id-card .id-content {
-          grid-template-columns: 32% 1fr;
-          gap: 9px;
-          padding-left: 9px;
-          padding-right: 9px;
+          grid-template-columns: 32% minmax(0,1fr);
+          gap: 8px;
+          padding: 5px 8px 10px;
         }
 
         #member-id-card .id-row {
           font-size: 11px;
           padding: 6px;
         }
+
+        #member-id-card .id-number {
+          font-size: 11px;
+        }
       }
 
       @media print {
-        body * { visibility: hidden !important; }
+        body * {
+          visibility: hidden !important;
+        }
+
         #member-id-card,
-        #member-id-card * { visibility: visible !important; }
+        #member-id-card * {
+          visibility: visible !important;
+        }
+
         #member-id-card {
           position: absolute;
           left: 0;
@@ -1479,7 +1518,11 @@ function setupMemberIdCard() {
           max-width: none;
           margin: 0;
         }
-        #member-id-card .id-download { display: none !important; }
+
+        #member-id-card .id-download {
+          display: none !important;
+        }
+
         #member-id-card .id-card {
           box-shadow: none;
           -webkit-print-color-adjust: exact;
@@ -1489,8 +1532,9 @@ function setupMemberIdCard() {
     </style>
 
     <div class="id-card">
-      <header class="id-top">
+      <header class="id-header">
         <img class="id-logo" src="/logo.png" alt="সংগঠনের লোগো">
+
         <div class="id-org">উত্তর নলটেক সমাজ কল্যাণ সংগঠন</div>
         <div class="id-motto">একতাই শক্তি · Unity is Strength</div>
         <div class="id-ribbon">★ সদস্য পরিচয়পত্র ★</div>
@@ -1502,33 +1546,55 @@ function setupMemberIdCard() {
             ${
               photo
                 ? `<img class="id-photo" src="${esc(photo)}" alt="সদস্যের ছবি">`
-                : `<div class="id-photo" style="display:flex;align-items:center;justify-content:center;font-size:12px">ছবি নেই</div>`
+                : `<div class="id-no-photo">ছবি নেই</div>`
             }
           </div>
 
           <div class="id-status">অনুমোদিত সদস্য</div>
 
-          <div class="id-qr-box">
+          <div class="id-qr-frame">
             <div id="member-id-qr"></div>
           </div>
+
           <div class="id-scan">স্ক্যান করে সদস্য যাচাই করুন</div>
         </div>
 
         <div class="id-right">
           <div class="id-name">${esc(name)}</div>
-          <div class="id-number">সদস্য আইডি: ${esc(memberId)}</div>
 
-          <div class="id-row"><strong>মোবাইল:</strong> ${esc(phone)}</div>
-          <div class="id-row"><strong>রক্তের গ্রুপ:</strong> ${esc(blood)}</div>
-          <div class="id-row"><strong>ঠিকানা:</strong> ${esc(address)}</div>
-          <div class="id-row"><strong>পেশা:</strong> ${esc(occupation)}</div>
-          <div class="id-row"><strong>সদস্যপদ:</strong> অনুমোদিত</div>
+          <div class="id-number">
+            সদস্য আইডি: ${esc(memberId)}
+          </div>
+
+          <div class="id-row">
+            <strong>মোবাইল:</strong> ${esc(phone)}
+          </div>
+
+          <div class="id-row">
+            <strong>রক্তের গ্রুপ:</strong> ${esc(blood)}
+          </div>
+
+          <div class="id-row">
+            <strong>ঠিকানা:</strong> ${esc(address)}
+          </div>
+
+          <div class="id-row">
+            <strong>পেশা:</strong> ${esc(occupation)}
+          </div>
+
+          <div class="id-row">
+            <strong>সদস্যপদ:</strong> অনুমোদিত
+          </div>
+
+          <div class="id-date">
+            <small>📅 যোগদানের তারিখ</small>
+            <strong>${esc(joinDate)}</strong>
+          </div>
         </div>
       </div>
 
-      <div class="id-date">
-        <small>📅 যোগদানের তারিখ</small>
-        <span>${esc(joinDate)}</span>
+      <div class="id-org-bottom">
+        উত্তর নলটেক সমাজ কল্যাণ সংগঠন
       </div>
 
       <footer class="id-footer">
@@ -1554,27 +1620,31 @@ function setupMemberIdCard() {
     encodeURIComponent(currentUser.uid);
 
   function makeQR() {
-    if (typeof QRCode !== 'undefined') {
-      new QRCode(qrBox, {
-        text: verifyURL,
-        width: 130,
-        height: 130,
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    } else {
+    if (typeof QRCode === 'undefined') {
       qrBox.textContent = 'QR তৈরি হয়নি';
+      return;
     }
+
+    new QRCode(qrBox, {
+      text: verifyURL,
+      width: 120,
+      height: 120,
+      correctLevel: QRCode.CorrectLevel.M
+    });
   }
 
   if (typeof QRCode !== 'undefined') {
     makeQR();
   } else {
     const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.src =
+      'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+
     script.onload = makeQR;
     script.onerror = () => {
       qrBox.textContent = 'QR লোড হয়নি';
     };
+
     document.head.appendChild(script);
   }
 }
