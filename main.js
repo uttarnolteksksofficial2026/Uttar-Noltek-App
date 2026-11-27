@@ -1795,7 +1795,12 @@ async function memberView() {
       <div data-page="idcards" hidden>
         <section class="panel">
           <h2 class="heading-blue">আমার ডিজিটাল সদস্য আইডি কার্ড</h2>
-          <div id="memberIdCard"></div>
+          <div id="memberIdCard">
+  <div class="panel">
+    <h3>ডিজিটাল সদস্য পরিচয়পত্র</h3>
+    <p>আপনার সদস্য পরিচয়পত্র প্রস্তুত হচ্ছে...</p>
+  </div>
+</div>
         </section>
       </div>
 
