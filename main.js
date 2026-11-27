@@ -1192,13 +1192,24 @@ async function memberView() {
 <section class="panel">
   <h2 class="heading-blue">আমার প্রোফাইল</h2>
 
-  <div style="text-align:center; margin:20px 0;">
-    <img
-      src="${escapeHTML(profile.photoURL || '/logo.png')}"
-      alt="প্রোফাইল ছবি"
-      style="width:100px;height:100px;border-radius:50%;object-fit:cover;"
-    >
+<div style="text-align:center; margin:20px 0;">
+  <img
+    id="profilePhoto"
+    src="${escapeHTML(profile.photoURL || '/logo.png')}"
+    alt="প্রোফাইল ছবি"
+    style="width:110px;height:110px;border-radius:50%;object-fit:cover;"
+  >
+
+  <div style="margin-top:15px;">
+    <input type="file" id="profilePhotoInput" accept="image/*">
+
+    <button type="button" id="uploadProfilePhoto" class="btn">
+      ছবি আপলোড করুন
+    </button>
   </div>
+
+  <p id="photoMessage"></p>
+</div>
 
   <p><strong>নাম:</strong>
     ${escapeHTML(profile.fullName || 'নাম দেওয়া হয়নি')}
