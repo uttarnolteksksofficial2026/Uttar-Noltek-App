@@ -162,7 +162,22 @@ function menuDrawer(items) {
 
 function bindLogout() {
   const button = $('#logout');
-  if (button) button.onclick = () => signOut(auth);
+  if (!button) return;
+
+  button.onclick = async () => {
+    try {
+      button.disabled = true;
+
+      await signOut(auth);
+
+      loginView();
+    } catch (error) {
+      console.error('LOGOUT ERROR:', error);
+      alert('লগআউট করা যায়নি। আবার চেষ্টা করুন।');
+    } finally {
+      button.disabled = false;
+    }
+  };
 }
 
 function contactHTML() {
