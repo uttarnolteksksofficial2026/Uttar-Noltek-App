@@ -3015,54 +3015,101 @@ async function refreshAdmin() {
   }
 } 
 
+
 async function changeStatus(uid, status) {
   try {
     if (status === 'approved') {
-      const users = await getList('users');
+      const userRef = doc(db, 'users', uid);
+      const publicRef = doc(db, 'publicMembers', uid);
+      const sequenceRef = doc(db, 'publicMeta', 'memberSequence');
 
-      const members = users
-        .filter(member =>
-          member.role !== 'admin' &&
-          (member.status === 'approved' || member.id === uid)
-        )
-        .sort((a, b) => {
-          const dateA = a.createdAt?.toDate
-            ? a.createdAt.toDate().getTime()
-            : new Date(a.createdAt || 0).getTime();
+      await runTransaction(db, async transaction => {
+        const userSnap = await transaction.get(userRef);
 
-          const dateB = b.createdAt?.toDate
-            ? b.createdAt.toDate().getTime()
-            : new Date(b.createdAt || 0).getTime();
+        if (!userSnap.exists()) {
+          throw new Error('সদস্যের তথ্য পাওয়া যায়নি।');
+        }
 
-          return dateA - dateB;
+        const userData = userSnap.data();
+
+        if (userData.role === 'admin') {
+          throw new Error('অ্যাডমিনকে সদস্য নম্বর দেওয়া হবে না।');
+        }
+
+        const publicSnap = await transaction.get(publicRef);
+        const sequenceSnap = await transaction.get(sequenceRef);
+
+        let memberNumber = userData.memberNumber ||
+          (publicSnap.exists()
+            ? publicSnap.data().memberNumber
+            : '');
+
+        let nextNumber = sequenceSnap.exists()
+          ? Number(sequenceSnap.data().lastNumber || 0)
+          : 0;
+
+        if (!Number.isFinite(nextNumber) || nextNumber < 0) {
+          nextNumber = 0;
+        }
+
+        // আগে থেকে নম্বর থাকলে সেটি অপরিবর্তিত থাকবে।
+        if (!memberNumber) {
+          nextNumber += 1;
+          memberNumber = String(nextNumber).padStart(3, '0');
+        } else {
+          const existingNumber = Number(memberNumber);
+
+          if (Number.isInteger(existingNumber)) {
+            nextNumber = Math.max(nextNumber, existingNumber);
+          }
+        }
+
+        const approvedAt =
+          userData.approvedAt || serverTimestamp();
+
+        transaction.set(userRef, {
+          status: 'approved',
+          memberNumber,
+          approvedAt
+        }, { merge: true });
+
+        const publicData = {
+          ...userData,
+          status: 'approved',
+          role: userData.role || 'member',
+          memberNumber,
+          approvedAt
+        };
+
+        delete publicData.password;
+
+        transaction.set(publicRef, publicData, {
+          merge: true
         });
 
-      let nextNumber = members.reduce((max, member) => {
-        const number = Number(member.memberNumber);
-        return Number.isInteger(number) ? Math.max(max, number) : max;
-      }, 0) + 1;
+        transaction.set(sequenceRef, {
+          lastNumber: nextNumber,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      });
 
-      for (const member of members) {
-        if (!member.memberNumber) {
-          const memberNumber = String(nextNumber).padStart(3, '0');
+    } else {
+      await updateDoc(doc(db, 'users', uid), {
+        status
+      });
 
-          await updateDoc(doc(db, 'users', member.id), {
-            memberNumber
-          });
-
-          member.memberNumber = memberNumber;
-          nextNumber++;
-        }
+      if (status !== 'approved') {
+        await setDoc(doc(db, 'publicMembers', uid), {
+          status
+        }, { merge: true });
       }
     }
-
-    await updateDoc(doc(db, 'users', uid), { status });
 
     alert('সদস্যের অবস্থা পরিবর্তন হয়েছে।');
     await refreshAdmin();
 
   } catch (error) {
-    console.error('MEMBER NUMBER ERROR:', error);
+    console.error('MEMBER APPROVAL ERROR:', error);
     alert('পরিবর্তন করা যায়নি: ' + error.message);
   }
 }
