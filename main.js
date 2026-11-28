@@ -2947,7 +2947,6 @@ async function refreshAdmin() {
     alert('অ্যাডমিন তথ্য লোড হয়নি। Firestore Rules পরীক্ষা করুন।');
   }
 } 
-async function changeStatus(uid, status) {
 
 async function changeStatus(uid, status) {
   try {
