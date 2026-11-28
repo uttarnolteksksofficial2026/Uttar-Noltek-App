@@ -1694,6 +1694,7 @@ async function setupMemberIdCard(profile = {}) {
 </div>
 `;
 }
+
 async function memberView() {
   const menuItems = [
     { id: 'home', icon: '⌂', label: 'হোম' },
@@ -1717,7 +1718,9 @@ async function memberView() {
     const date = value.toDate ? value.toDate() : new Date(value);
     if (isNaN(date.getTime())) return 'তথ্য নেই';
     return date.toLocaleDateString('bn-BD', {
-      day: 'numeric', month: 'long', year: 'numeric'
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
     });
   };
 
@@ -1844,11 +1847,11 @@ async function memberView() {
         <section class="panel">
           <h2 class="heading-blue">আমার ডিজিটাল সদস্য আইডি কার্ড</h2>
           <div id="memberIdCard">
-  <div class="panel">
-    <h3>ডিজিটাল সদস্য পরিচয়পত্র</h3>
-    <p>আপনার সদস্য পরিচয়পত্র প্রস্তুত হচ্ছে...</p>
-  </div>
-</div>
+            <div class="panel">
+              <h3>ডিজিটাল সদস্য পরিচয়পত্র</h3>
+              <p>আপনার সদস্য পরিচয়পত্র প্রস্তুত হচ্ছে...</p>
+            </div>
+          </div>
         </section>
       </div>
 
@@ -1881,11 +1884,11 @@ async function memberView() {
       </div>
 
       <div data-page="prayer" hidden>
-        <section class="panel" style="text-align:center">
+        <section class="panel" style="text-align:center;background:linear-gradient(135deg,#075b4b,#063b35);color:white;border-radius:16px;padding:22px">
           <div style="color:#d4af37;font-size:12px;letter-spacing:2px">
             بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
           </div>
-          <h2 class="heading-green">🕌 নামাজের সময়সূচী</h2>
+          <h2 style="color:white">🕌 নামাজের সময়সূচী</h2>
           <p id="prayerLocation">আপনার লোকেশন শনাক্ত হচ্ছে...</p>
           <div id="prayerTimes">সময়সূচী লোড হচ্ছে...</div>
           <p id="iftarTime"></p>
@@ -1911,7 +1914,6 @@ async function memberView() {
     ])}
     ${footer()}`;
 
-  bindLogout();
   setupNavigation();
 
   document.querySelectorAll('[data-goto]').forEach(button => {
@@ -1944,12 +1946,20 @@ async function memberView() {
 
     try {
       await updateDoc(doc(db, 'users', currentUser.uid), {
-        fullName, phone, address, bloodGroup, occupation,
+        fullName,
+        phone,
+        address,
+        bloodGroup,
+        occupation,
         updatedAt: serverTimestamp()
       });
 
       Object.assign(profile, {
-        fullName, phone, address, bloodGroup, occupation
+        fullName,
+        phone,
+        address,
+        bloodGroup,
+        occupation
       });
 
       message.textContent = 'প্রোফাইল সফলভাবে সংরক্ষিত হয়েছে।';
@@ -1971,10 +1981,12 @@ async function memberView() {
       message.textContent = 'আগে একটি ছবি নির্বাচন করুন।';
       return;
     }
+
     if (!file.type.startsWith('image/')) {
       message.textContent = 'শুধু ছবি নির্বাচন করুন।';
       return;
     }
+
     if (file.size > 5 * 1024 * 1024) {
       message.textContent = 'ছবির সাইজ ৫ MB-এর কম হতে হবে।';
       return;
@@ -1988,6 +2000,7 @@ async function memberView() {
         storage,
         `profilePhotos/${currentUser.uid}/${Date.now()}`
       );
+
       const uploadTask = uploadBytesResumable(photoRef, file);
 
       await new Promise((resolve, reject) => {
@@ -2032,7 +2045,10 @@ async function memberView() {
       const name = String(member.fullName || '').toLowerCase();
       const job = String(member.occupation || '').toLowerCase();
       const id = String(member.uid || member.id || '').toLowerCase();
-      return name.includes(search) || job.includes(search) || id.includes(search);
+
+      return name.includes(search) ||
+        job.includes(search) ||
+        id.includes(search);
     });
 
     $('#memberDirectory').innerHTML = filtered.length
@@ -2055,17 +2071,19 @@ async function memberView() {
   $('#memberDirectorySearch').addEventListener('input', renderDirectory);
 
   try {
-  const users = await getList('users');
+    const users = await getList('publicMembers');
+
     directoryMembers = users.filter(member =>
       member.status === 'approved' && member.role !== 'admin'
     );
+
     $('#memberDashboardCount').textContent =
-  directoryMembers.length > 0
-    ? directoryMembers.length.toLocaleString('bn-BD')
-    : 'লোড হয়নি';  
+      directoryMembers.length.toLocaleString('bn-BD');
+
     renderDirectory();
   } catch (error) {
     console.error('MEMBER DIRECTORY ERROR:', error);
+    $('#memberDashboardCount').textContent = 'লোড হয়নি';
     $('#memberDirectory').textContent =
       'সদস্য তালিকা দেখার অনুমতি নেই অথবা তথ্য লোড করা যায়নি।';
   }
@@ -2079,19 +2097,24 @@ async function memberView() {
     const donationTotal = donations.reduce(
       (sum, item) => sum + (Number(item.amount) || 0), 0
     );
+
     const expenseTotal = expenses.reduce(
       (sum, item) => sum + (Number(item.amount) || 0), 0
     );
+
     const balance = donationTotal - expenseTotal;
     const fmt = value => money(value);
 
     $('#memberDonationTotal').textContent = fmt(donationTotal);
     $('#memberExpenseTotal').textContent = fmt(expenseTotal);
     $('#memberBalanceTotal').textContent = fmt(balance);
+
     $('#financeDonation').textContent = fmt(donationTotal);
     $('#financeExpense').textContent = fmt(expenseTotal);
     $('#financeBalance').textContent = fmt(balance);
-    $('#financeMessage').textContent = 'হিসাবের সারাংশ সফলভাবে লোড হয়েছে।';
+
+    $('#financeMessage').textContent =
+      'হিসাবের সারাংশ সফলভাবে লোড হয়েছে।';
   } catch (error) {
     console.error('MEMBER FINANCE ERROR:', error);
     $('#financeMessage').textContent =
@@ -2108,7 +2131,9 @@ async function memberView() {
 
     $('#myDues').innerHTML = dues.length
       ? dues.map(d => `
-        <div class="noticeitem">${esc(d.month || '')} — ${money(d.amount)}</div>
+        <div class="noticeitem">
+          ${esc(d.month || '')} — ${money(d.amount)}
+        </div>
       `).join('')
       : 'এখনো কোনো চাঁদা নির্ধারণ করা হয়নি।';
 
@@ -2116,7 +2141,9 @@ async function memberView() {
 
     document.querySelectorAll('[data-receipt]').forEach(button => {
       button.onclick = () => {
-        const payment = payments.find(p => p.id === button.dataset.receipt);
+        const payment = payments.find(
+          p => p.id === button.dataset.receipt
+        );
         if (payment) openReceipt(payment);
       };
     });
@@ -2170,13 +2197,17 @@ async function memberView() {
       const response = await fetch(url);
       const result = await response.json();
 
-      if (result.code !== 200) throw new Error('সময়সূচী পাওয়া যায়নি');
+      if (result.code !== 200) {
+        throw new Error('সময়সূচী পাওয়া যায়নি');
+      }
 
       const times = result.data.timings;
+
       const format12Hour = time => {
         const [h, m] = time.split(':').map(Number);
         const period = h >= 12 ? 'PM' : 'AM';
         const hour = h % 12 || 12;
+
         return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
       };
 
@@ -2191,11 +2222,13 @@ async function memberView() {
           <article>🌙 এশা<b>${format12Hour(times.Isha)}</b></article>
         </div>
       `;
+
       iftarTime.textContent =
         '🌙 আজকের ইফতারের সময়: ' + format12Hour(times.Maghrib);
     } catch (error) {
       console.error('PRAYER TIME ERROR:', error);
-      prayerTimes.textContent = 'নামাজের সময় লোড হয়নি। আবার চেষ্টা করুন।';
+      prayerTimes.textContent =
+        'নামাজের সময় লোড হয়নি। আবার চেষ্টা করুন।';
     }
   }
 
@@ -2204,7 +2237,8 @@ async function memberView() {
     prayerLocation.textContent = 'লোকেশন শনাক্ত হচ্ছে...';
 
     if (!navigator.geolocation) {
-      prayerLocation.textContent = 'আপনার ব্রাউজারে লোকেশন সুবিধা নেই।';
+      prayerLocation.textContent =
+        'আপনার ব্রাউজারে লোকেশন সুবিধা নেই।';
       return;
     }
 
@@ -2222,13 +2256,16 @@ async function memberView() {
   }
 
   $('#detectLocation').onclick = detectPrayerLocation;
-console.log('ID CARD FUNCTION STARTED');
-try {
-  await setupMemberIdCard(profile);
-} catch (error) {
-  console.error('MEMBER ID CARD ERROR:', error);
-  $('#memberIdCard').innerHTML =
-    '<p>আইডি কার্ড লোড করা যায়নি।</p>';
+
+  console.log('ID CARD FUNCTION STARTED');
+
+  try {
+    await setupMemberIdCard(profile);
+  } catch (error) {
+    console.error('MEMBER ID CARD ERROR:', error);
+    $('#memberIdCard').innerHTML =
+      '<p>আইডি কার্ড লোড করা যায়নি।</p>';
+  }
 }
 
 /* ADMIN DASHBOARD */
