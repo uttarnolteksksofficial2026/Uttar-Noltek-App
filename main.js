@@ -654,11 +654,11 @@ async function loadUser(user) {
   currentUser = user;
 
   try {
-    const ref = doc(db, 'users', user.uid);
-    const snap = await getDocFromServer(ref);
+    const userRef = doc(db, 'users', user.uid);
+    const snap = await getDocFromServer(userRef);
 
     if (!snap.exists()) {
-      await setDoc(ref, {
+      await setDoc(userRef, {
         email: user.email || '',
         phone: user.phoneNumber || '',
         status: 'pending',
@@ -675,7 +675,6 @@ async function loadUser(user) {
       profile = snap.data();
     }
 
-    // নিষ্ক্রিয় সদস্যের প্রবেশ বন্ধ
     if (profile.status === 'inactive') {
       await signOut(auth);
       alert('আপনার সদস্য অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে।');
@@ -686,16 +685,30 @@ async function loadUser(user) {
     if (profile.status === 'rejected') return rejectedView();
     if (profile.status !== 'approved') return pendingView();
 
+    // Firestore থেকে সদস্যের প্রোফাইল ছবি লোড
+    const photoSnap = await getDoc(
+      doc(db, 'memberPhotos', user.uid)
+    );
+
+    if (photoSnap.exists()) {
+      const photoData = photoSnap.data().photoData;
+
+      if (photoData) {
+        profile.photoURL = photoData;
+      }
+    }
+
     if (profile.role === 'admin') return adminView();
 
     return memberView();
 
   } catch (error) {
-    console.error(error);
+    console.error('LOAD USER ERROR:', error);
+
     app.innerHTML = `
       <main class="app-main">
         <h2>তথ্য লোড করা যায়নি</h2>
-        <p>${error.message}</p>
+        <p>${escapeHTML(error.message)}</p>
         <button onclick="location.reload()">আবার চেষ্টা করুন</button>
       </main>
     `;
