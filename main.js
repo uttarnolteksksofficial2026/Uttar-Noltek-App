@@ -3718,17 +3718,42 @@ async function saveMonthlyDueSetting() {
 
 /* DUES AND PAYMENTS */
 
+function selectedMember(selector) {
+  const select = $(selector);
+
+  if (!select) {
+    throw new Error('সদস্য নির্বাচন করার তালিকা পাওয়া যায়নি।');
+  }
+
+  const uid = select.value;
+
+  if (!uid) {
+    throw new Error('আগে একজন সদস্য নির্বাচন করুন।');
+  }
+
+  const option = select.options[select.selectedIndex];
+
+  return {
+    uid,
+    phone: option?.dataset.phone || option?.textContent.trim() || ''
+  };
+}
+
 async function saveDue() {
   try {
     const member = selectedMember('#dueMember');
     const month = $('#dueMonth').value;
     const amount = Number(
-  $('#dueAmount').value ||
-  $('#monthlyDueSetting').value
-);
+      $('#dueAmount').value ||
+      $('#monthlyDueSetting').value
+    );
 
-    if (!month || amount < 100 || amount > 5000) {
-      throw new Error('মাস নির্বাচন করুন এবং ১০০ থেকে ৫,০০০ টাকার মধ্যে চাঁদা দিন।');
+    if (!month) {
+      throw new Error('চাঁদার মাস নির্বাচন করুন।');
+    }
+
+    if (!Number.isFinite(amount) || amount < 100 || amount > 5000) {
+      throw new Error('চাঁদার পরিমাণ ১০০ থেকে ৫,০০০ টাকার মধ্যে দিন।');
     }
 
     await addDoc(collection(db, 'dues'), {
@@ -3740,12 +3765,14 @@ async function saveDue() {
       createdBy: currentUser.uid
     });
 
-    alert('চাঁদা নির্ধারণ করা হয়েছে।');
+    alert('নির্বাচিত সদস্যের চাঁদা নির্ধারণ করা হয়েছে।');
+
     $('#dueAmount').value = '';
+
     await refreshAdmin();
 
   } catch (error) {
-    alert(error.message);
+    alert('চাঁদা নির্ধারণে সমস্যা হয়েছে: ' + error.message);
   }
 }
 
