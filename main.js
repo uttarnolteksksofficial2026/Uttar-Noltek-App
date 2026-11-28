@@ -3819,6 +3819,11 @@ async function registerMember() {
         : error.message;
   }
 }
+const publicVerifyUid = new URLSearchParams(window.location.search).get('verify');
+
+if (publicVerifyUid) {
+  showPublicVerification(publicVerifyUid);
+}
 onAuthStateChanged(auth, async user => {
   if (!user) {
     currentUser = null;
