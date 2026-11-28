@@ -3227,6 +3227,7 @@ async function deleteAdminFinanceRecord(kind, id) {
   }
 }
 
+
 async function refreshAdmin() {
   try {
     const [
@@ -3248,32 +3249,37 @@ async function refreshAdmin() {
     ]);
 
     await loadConstitutionStatus();
+
     const monthlyDueSnap = await getDoc(
-  doc(db, 'publicFinance', 'settings')
-);
+      doc(db, 'publicFinance', 'settings')
+    );
 
-const monthlyDue = monthlyDueSnap.exists()
-  ? Number(monthlyDueSnap.data().monthlyDue || 0)
-  : 0;
+    const monthlyDue = monthlyDueSnap.exists()
+      ? Number(monthlyDueSnap.data().monthlyDue || 0)
+      : 0;
 
-$('#monthlyDueSetting').value = monthlyDue || '';
+    $('#monthlyDueSetting').value = monthlyDue || '';
 
-if (!$('#dueAmount').value) {
-  $('#dueAmount').value = monthlyDue || '';
-}
+    if (!$('#dueAmount').value) {
+      $('#dueAmount').value = monthlyDue || '';
+    }
 
-if (!$('#payAmount').value) {
-  $('#payAmount').value = monthlyDue || '';
-}
+    $('#payAmount').value = monthlyDue || '';
 
-    const members = users.filter(u => u.status === 'approved');
-    const pending = users.filter(u => u.status === 'pending');
+    const members = users.filter(
+      u => u.status === 'approved'
+    );
+
+    const pending = users.filter(
+      u => u.status === 'pending'
+    );
 
     $('#memberCount').textContent =
       members.length.toLocaleString('bn-BD');
-    
-$('#memberCountHero').textContent =
-  members.length.toLocaleString('bn-BD');
+
+    $('#memberCountHero').textContent =
+      members.length.toLocaleString('bn-BD');
+
     $('#pendingCount').textContent =
       pending.length.toLocaleString('bn-BD');
 
@@ -3286,13 +3292,16 @@ $('#memberCountHero').textContent =
     );
 
     // সদস্যদের দেখানোর জন্য পাবলিক আর্থিক সারাংশ আপডেট
-await setDoc(doc(db, 'publicFinance', 'summary'), {
-  donationTotal: Number(donationSum) || 0,
-  expenseTotal: Number(expenseSum) || 0,
-  balance: (Number(donationSum) || 0) - (Number(expenseSum) || 0),
-  updatedAt: serverTimestamp(),
-  updatedBy: currentUser.uid
-});
+    await setDoc(doc(db, 'publicFinance', 'summary'), {
+      donationTotal: Number(donationSum) || 0,
+      expenseTotal: Number(expenseSum) || 0,
+      balance:
+        (Number(donationSum) || 0) -
+        (Number(expenseSum) || 0),
+      updatedAt: serverTimestamp(),
+      updatedBy: currentUser.uid
+    });
+
     $('#donationTotal').textContent = money(donationSum);
     $('#expenseTotal').textContent = money(expenseSum);
 
@@ -3356,13 +3365,13 @@ await setDoc(doc(db, 'publicFinance', 'summary'), {
               <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
 
               <button
-  class="primary"
-  data-edit-member="${escapeHTML(memberId)}"
->
-  সদস্যের তথ্য এডিট
-</button>
+                class="primary"
+                data-edit-member="${escapeHTML(memberId)}"
+              >
+                সদস্যের তথ্য এডিট
+              </button>
 
-                <button
+              <button
                 class="secondary"
                 data-deactivate="${escapeHTML(memberId)}"
               >
@@ -3373,41 +3382,43 @@ await setDoc(doc(db, 'publicFinance', 'summary'), {
         }).join('')
       : 'কোনো অনুমোদিত সদস্য নেই।';
 
-    // সদস্য নিষ্ক্রিয় করার বাটন
-
+    // সদস্যের তথ্য এডিট বাটন
     document.querySelectorAll('#memberList [data-edit-member]')
-  .forEach(button => {
-    button.onclick = () =>
-      editAdminMember(button.dataset.editMember);
-  });
-    document.querySelectorAll('#memberList [data-deactivate]').forEach(button => {
-      button.onclick = async () => {
-        const id = button.dataset.deactivate;
+      .forEach(button => {
+        button.onclick = () =>
+          editAdminMember(button.dataset.editMember);
+      });
 
-        if (!confirm('এই সদস্যকে নিষ্ক্রিয় করতে চান?')) {
-          return;
-        }
+    // সদস্য নিষ্ক্রিয় করার বাটন
+    document.querySelectorAll('#memberList [data-deactivate]')
+      .forEach(button => {
+        button.onclick = async () => {
+          const id = button.dataset.deactivate;
 
-        button.disabled = true;
+          if (!confirm('এই সদস্যকে নিষ্ক্রিয় করতে চান?')) {
+            return;
+          }
 
-        try {
-          await updateDoc(doc(db, 'users', id), {
-            status: 'inactive'
-          });
+          button.disabled = true;
 
-          button.closest('.noticeitem')?.remove();
+          try {
+            await updateDoc(doc(db, 'users', id), {
+              status: 'inactive'
+            });
 
-          alert('সদস্য নিষ্ক্রিয় করা হয়েছে।');
+            await refreshAdmin();
 
-        } catch (error) {
-          console.error(error);
+            alert('সদস্য নিষ্ক্রিয় করা হয়েছে।');
 
-          alert('নিষ্ক্রিয় করা যায়নি: ' + error.message);
+          } catch (error) {
+            console.error(error);
 
-          button.disabled = false;
-        }
-      };
-    });
+            alert('নিষ্ক্রিয় করা যায়নি: ' + error.message);
+
+            button.disabled = false;
+          }
+        };
+      });
 
     // চাঁদা ও পেমেন্টের সদস্য তালিকা
     const options = members.map(u => `
@@ -3444,12 +3455,13 @@ await setDoc(doc(db, 'publicFinance', 'summary'), {
 
     $('#financeReport').innerHTML = report;
     $('#financeReport2').innerHTML = report;
+
     renderAdminFinanceRecords(
-  dues,
-  payments,
-  donations,
-  expenses
-);
+      dues,
+      payments,
+      donations,
+      expenses
+    );
 
     // নিয়ম-কানুন
     renderAdminRules(rules);
@@ -3458,7 +3470,9 @@ await setDoc(doc(db, 'publicFinance', 'summary'), {
     const constitutionItems =
       await ensureDefaultConstitution(constitution);
 
-    renderAdminConstitution(sortByOrder(constitutionItems));
+    renderAdminConstitution(
+      sortByOrder(constitutionItems)
+    );
 
     if ($('#constitutionStatus')) {
       $('#constitutionStatus').value = constitutionStatus;
@@ -3468,8 +3482,7 @@ await setDoc(doc(db, 'publicFinance', 'summary'), {
     console.error(error);
     alert('অ্যাডমিন তথ্য লোড হয়নি। Firestore Rules পরীক্ষা করুন।');
   }
-} 
-
+}
 
 async function changeStatus(uid, status) {
   try {
