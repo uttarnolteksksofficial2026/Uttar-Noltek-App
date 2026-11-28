@@ -2378,7 +2378,12 @@ async function adminView() {
         </section>
         <section class="panel">
           <h2 class="heading-blue">সদস্য তালিকা</h2>
-          <div id="memberList">লোড হচ্ছে...</div>
+
+<button class="primary" id="assignOldMemberNumbers">
+  পুরোনো সদস্যদের নম্বর তৈরি করুন
+</button>
+
+<div id="memberList">লোড হচ্ছে...</div>
         </section>
       </div>
 
@@ -2571,6 +2576,7 @@ async function adminView() {
   $('#saveConstitutionStatus').onclick = saveConstitutionStatus;
  
   setupAdminMemberCards();
+  $('#assignOldMemberNumbers').onclick = assignOldMemberNumbers;
   await refreshAdmin();
 }
 async function setupAdminMemberCards() {
@@ -3113,6 +3119,131 @@ async function changeStatus(uid, status) {
     alert('পরিবর্তন করা যায়নি: ' + error.message);
   }
 }
+async function assignOldMemberNumbers() {
+  const button = $('#assignOldMemberNumbers');
+
+  if (!confirm('পুরোনো অনুমোদিত সদস্যদের ধারাবাহিক নম্বর দিতে চান?')) {
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'নম্বর তৈরি হচ্ছে...';
+
+  try {
+    const users = await getList('users');
+
+    await runTransaction(db, async transaction => {
+      const sequenceRef = doc(db, 'publicMeta', 'memberSequence');
+
+      const approved = users.filter(member =>
+        member.status === 'approved' &&
+        member.role !== 'admin'
+      );
+
+      const refs = approved.map(member => ({
+        userRef: doc(db, 'users', member.id),
+        publicRef: doc(db, 'publicMembers', member.id)
+      }));
+
+      const sequenceSnap = await transaction.get(sequenceRef);
+
+      const snapshots = await Promise.all(
+        refs.flatMap(refsItem => [
+          transaction.get(refsItem.userRef),
+          transaction.get(refsItem.publicRef)
+        ])
+      );
+
+      let lastNumber = sequenceSnap.exists()
+        ? Number(sequenceSnap.data().lastNumber || 0)
+        : 0;
+
+      const records = [];
+
+      for (let i = 0; i < refs.length; i++) {
+        const userSnap = snapshots[i * 2];
+        const publicSnap = snapshots[i * 2 + 1];
+
+        if (!userSnap.exists()) continue;
+
+        const data = userSnap.data();
+
+        const existingNumber =
+          data.memberNumber ||
+          (publicSnap.exists()
+            ? publicSnap.data().memberNumber
+            : '');
+
+        const numericNumber = Number(existingNumber);
+
+        if (Number.isInteger(numericNumber)) {
+          lastNumber = Math.max(lastNumber, numericNumber);
+        }
+
+        records.push({
+          userRef: refs[i].userRef,
+          publicRef: refs[i].publicRef,
+          data,
+          memberNumber: existingNumber
+        });
+      }
+
+      const getTime = value => {
+        if (!value) return 0;
+        if (value.toDate) return value.toDate().getTime();
+
+        const time = new Date(value).getTime();
+        return Number.isNaN(time) ? 0 : time;
+      };
+
+      records.sort((a, b) =>
+        getTime(a.data.approvedAt || a.data.createdAt) -
+        getTime(b.data.approvedAt || b.data.createdAt)
+      );
+
+      for (const member of records) {
+        if (member.memberNumber) continue;
+
+        lastNumber++;
+
+        const memberNumber = String(lastNumber).padStart(3, '0');
+
+        transaction.set(member.userRef, {
+          memberNumber
+        }, { merge: true });
+
+        const publicData = {
+          ...member.data,
+          memberNumber,
+          status: 'approved'
+        };
+
+        delete publicData.password;
+
+        transaction.set(member.publicRef, publicData, {
+          merge: true
+        });
+      }
+
+      transaction.set(sequenceRef, {
+        lastNumber,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    });
+
+    alert('পুরোনো সদস্যদের নম্বর তৈরি হয়েছে।');
+    await refreshAdmin();
+
+  } catch (error) {
+    console.error('OLD MEMBER NUMBER ERROR:', error);
+    alert('নম্বর তৈরি করা যায়নি: ' + error.message);
+
+  } finally {
+    button.disabled = false;
+    button.textContent = 'পুরোনো সদস্যদের নম্বর তৈরি করুন';
+  }
+}
+
 
 /* DUES AND PAYMENTS */
 
