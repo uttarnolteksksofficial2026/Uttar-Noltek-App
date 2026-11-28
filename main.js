@@ -2280,6 +2280,7 @@ async function memberView() {
     console.error('MEMBER ID CARD ERROR:', error);
     $('#memberIdCard').innerHTML =
       '<p>আইডি কার্ড লোড করা যায়নি।</p>';
+    bindLogout();
   }
 }
 
