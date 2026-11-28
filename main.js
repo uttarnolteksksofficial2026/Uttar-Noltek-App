@@ -2170,8 +2170,17 @@ async function memberView() {
   Number(a.memberNumber || 0) - Number(b.memberNumber || 0)
 );
 
-    $('#memberDashboardCount').textContent =
-      directoryMembers.length.toLocaleString('bn-BD');
+    const memberCountSnap = await getDoc(
+  doc(db, 'publicFinance', 'summary')
+);
+
+const memberCountData = memberCountSnap.exists()
+  ? memberCountSnap.data()
+  : {};
+
+$('#memberDashboardCount').textContent =
+  Number(memberCountData.approvedMemberCount || 0)
+    .toLocaleString('bn-BD');
 
     renderDirectory();
   } catch (error) {
@@ -3293,14 +3302,17 @@ async function refreshAdmin() {
 
     // সদস্যদের দেখানোর জন্য পাবলিক আর্থিক সারাংশ আপডেট
     await setDoc(doc(db, 'publicFinance', 'summary'), {
-      donationTotal: Number(donationSum) || 0,
-      expenseTotal: Number(expenseSum) || 0,
-      balance:
-        (Number(donationSum) || 0) -
-        (Number(expenseSum) || 0),
-      updatedAt: serverTimestamp(),
-      updatedBy: currentUser.uid
-    });
+  donationTotal: Number(donationSum) || 0,
+  expenseTotal: Number(expenseSum) || 0,
+  balance: (Number(donationSum) || 0) - (Number(expenseSum) || 0),
+
+  approvedMemberCount: members.filter(
+    u => u.role !== 'admin'
+  ).length,
+
+  updatedAt: serverTimestamp(),
+  updatedBy: currentUser.uid
+});
 
     $('#donationTotal').textContent = money(donationSum);
     $('#expenseTotal').textContent = money(expenseSum);
