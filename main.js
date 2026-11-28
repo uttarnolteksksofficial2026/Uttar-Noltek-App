@@ -2058,14 +2058,16 @@ async function memberView() {
     const search = ($('#memberDirectorySearch').value || '').toLowerCase();
 
     const filtered = directoryMembers.filter(member => {
-      const name = String(member.fullName || '').toLowerCase();
-      const job = String(member.occupation || '').toLowerCase();
-      const id = String(member.uid || member.id || '').toLowerCase();
+  const name = String(member.fullName || '').toLowerCase();
+  const job = String(member.occupation || '').toLowerCase();
+  const id = String(member.uid || member.id || '').toLowerCase();
+  const number = String(member.memberNumber || '').toLowerCase();
 
-      return name.includes(search) ||
-        job.includes(search) ||
-        id.includes(search);
-    });
+  return name.includes(search) ||
+    job.includes(search) ||
+    id.includes(search) ||
+    number.includes(search);
+});
 
     $('#memberDirectory').innerHTML = filtered.length
       ? filtered.map(member => `
@@ -2075,6 +2077,7 @@ async function memberView() {
             alt="সদস্য">
           <div>
             <b>${esc(member.fullName || 'নাম নেই')}</b>
+            <p>সদস্য নম্বর: ${esc(member.memberNumber || 'নম্বর নেই')}</p>
             <p>আইডি: ${esc(String(member.uid || member.id || '').slice(0,10).toUpperCase())}</p>
             <p>পেশা: ${esc(member.occupation || 'উল্লেখ নেই')}</p>
             <p>যোগদানের তারিখ: ${dateText(member.createdAt)}</p>
