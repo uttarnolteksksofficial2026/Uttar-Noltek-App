@@ -2180,39 +2180,41 @@ async function memberView() {
     $('#memberDirectory').textContent =
       'সদস্য তালিকা দেখার অনুমতি নেই অথবা তথ্য লোড করা যায়নি।';
   }
+  
+try {
+  const financeSnap = await getDoc(
+    doc(db, 'publicFinance', 'summary')
+  );
 
-  try {
-    const [donations, expenses] = await Promise.all([
-      getList('donations'),
-      getList('expenses')
-    ]);
-
-    const donationTotal = donations.reduce(
-      (sum, item) => sum + (Number(item.amount) || 0), 0
-    );
-
-    const expenseTotal = expenses.reduce(
-      (sum, item) => sum + (Number(item.amount) || 0), 0
-    );
-
-    const balance = donationTotal - expenseTotal;
-    const fmt = value => money(value);
-
-    $('#memberDonationTotal').textContent = fmt(donationTotal);
-    $('#memberExpenseTotal').textContent = fmt(expenseTotal);
-    $('#memberBalanceTotal').textContent = fmt(balance);
-
-    $('#financeDonation').textContent = fmt(donationTotal);
-    $('#financeExpense').textContent = fmt(expenseTotal);
-    $('#financeBalance').textContent = fmt(balance);
-
-    $('#financeMessage').textContent =
-      'হিসাবের সারাংশ সফলভাবে লোড হয়েছে।';
-  } catch (error) {
-    console.error('MEMBER FINANCE ERROR:', error);
-    $('#financeMessage').textContent =
-      'আর্থিক হিসাব দেখার অনুমতি নেই অথবা তথ্য লোড করা যায়নি।';
+  if (!financeSnap.exists()) {
+    throw new Error('পাবলিক আর্থিক সারাংশ এখনো তৈরি হয়নি।');
   }
+
+  const finance = financeSnap.data();
+
+  const donationTotal = Number(finance.donationTotal) || 0;
+  const expenseTotal = Number(finance.expenseTotal) || 0;
+  const balance = Number(finance.balance) || 0;
+
+  const fmt = value => money(value);
+
+  $('#memberDonationTotal').textContent = fmt(donationTotal);
+  $('#memberExpenseTotal').textContent = fmt(expenseTotal);
+  $('#memberBalanceTotal').textContent = fmt(balance);
+
+  $('#financeDonation').textContent = fmt(donationTotal);
+  $('#financeExpense').textContent = fmt(expenseTotal);
+  $('#financeBalance').textContent = fmt(balance);
+
+  $('#financeMessage').textContent =
+    'হিসাবের সারাংশ সফলভাবে লোড হয়েছে।';
+
+} catch (error) {
+  console.error('MEMBER FINANCE ERROR:', error);
+
+  $('#financeMessage').textContent =
+    'আর্থিক হিসাব লোড করা যায়নি। অ্যাডমিনের সঙ্গে যোগাযোগ করুন।';
+}
 
   try {
     const [dues, payments, notices, activities] = await Promise.all([
