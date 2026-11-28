@@ -3835,7 +3835,7 @@ if (publicVerifyUid) {
   showPublicVerification(publicVerifyUid);
 }
 onAuthStateChanged(auth, async user => {
-  if (!user) { await syncAllPublicVerification(user.uid);
+  if (!user) {
     currentUser = null;
     profile = null;
     confirmation = null;
@@ -3847,6 +3847,16 @@ onAuthStateChanged(auth, async user => {
   try {
     await loadUser(user);
 
+    const adminSnap = await getDoc(doc(db, 'users', user.uid));
+
+    if (
+      adminSnap.exists() &&
+      adminSnap.data().role === 'admin' &&
+      adminSnap.data().status === 'approved'
+    ) {
+      await syncAllPublicVerification(user.uid);
+    }
+
   } catch (error) {
     console.error(error);
 
@@ -3855,10 +3865,15 @@ onAuthStateChanged(auth, async user => {
         <section class="panel">
           <h2 class="heading-red">তথ্য লোড করা যায়নি</h2>
           <p>${escapeHTML(error.message)}</p>
-          <button class="secondary" id="tryAgain">আবার চেষ্টা করুন</button>
-          <button class="ghost" id="errorLogout">লগআউট</button>
+          <button class="secondary" id="tryAgain">
+            আবার চেষ্টা করুন
+          </button>
+          <button class="ghost" id="errorLogout">
+            লগআউট
+          </button>
         </section>
-      </main>`;
+      </main>
+    `;
 
     $('#tryAgain').onclick = () => loadUser(user);
     $('#errorLogout').onclick = () => signOut(auth);
