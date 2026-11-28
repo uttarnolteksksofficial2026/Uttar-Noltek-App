@@ -2940,6 +2940,14 @@ async function refreshAdmin() {
       (s, x) => s + Number(x.amount || 0), 0
     );
 
+    // সদস্যদের দেখানোর জন্য পাবলিক আর্থিক সারাংশ আপডেট
+await setDoc(doc(db, 'publicFinance', 'summary'), {
+  donationTotal: Number(donationSum) || 0,
+  expenseTotal: Number(expenseSum) || 0,
+  balance: (Number(donationSum) || 0) - (Number(expenseSum) || 0),
+  updatedAt: serverTimestamp(),
+  updatedBy: currentUser.uid
+});
     $('#donationTotal').textContent = money(donationSum);
     $('#expenseTotal').textContent = money(expenseSum);
 
