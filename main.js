@@ -3825,7 +3825,7 @@ if (publicVerifyUid) {
   showPublicVerification(publicVerifyUid);
 }
 onAuthStateChanged(auth, async user => {
-  if (!user) {
+  if (!user) { await syncAllPublicVerification(user.uid);
     currentUser = null;
     profile = null;
     confirmation = null;
@@ -3935,4 +3935,54 @@ async function showPublicVerification(uid) {
   }
 }
 
+
+async function syncAllPublicVerification(adminUid) {
+  try {
+    // অ্যাডমিন যাচাই
+    const adminSnap = await getDoc(doc(db, 'users', adminUid));
+
+    if (
+      !adminSnap.exists() ||
+      adminSnap.data().role !== 'admin' ||
+      adminSnap.data().status !== 'approved'
+    ) {
+      console.log('শুধু অনুমোদিত অ্যাডমিন এই কাজ করতে পারবেন।');
+      return;
+    }
+
+    // সব সদস্যের তথ্য সংগ্রহ
+    const usersSnap = await getDocs(collection(db, 'users'));
+    let synced = 0;
+
+    for (const userDoc of usersSnap.docs) {
+      const uid = userDoc.id;
+      const member = userDoc.data();
+
+      if (member.status !== 'approved') continue;
+
+      // সদস্যের ছবি সংগ্রহ
+      const photoSnap = await getDoc(doc(db, 'memberPhotos', uid));
+      const photoData = photoSnap.exists()
+        ? String(photoSnap.data().photoData || '')
+        : '';
+
+      // প্রত্যেক সদস্যের জন্য আলাদা QR যাচাই তথ্য
+      await setDoc(doc(db, 'publicVerification', uid), {
+        fullName: String(member.fullName || ''),
+        memberNumber: String(member.memberNumber || ''),
+        address: String(member.address || ''),
+        status: String(member.status || ''),
+        photoData,
+        updatedAt: serverTimestamp()
+      });
+
+      synced++;
+    }
+
+    console.log('QR যাচাইয়ের তথ্য তৈরি হয়েছে। মোট সদস্য:', synced);
+
+  } catch (error) {
+    console.error('QR তথ্য তৈরিতে সমস্যা:', error);
+  }
+}
 
