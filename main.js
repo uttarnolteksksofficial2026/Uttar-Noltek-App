@@ -2660,6 +2660,7 @@ async function adminView() {
   setupNavigation();
 
   $('#saveDue').onclick = saveDue;
+  $('#saveMonthlyDueSetting').onclick = saveMonthlyDueSetting;
   $('#savePayment').onclick = savePayment;
   $('#saveDonation').onclick = saveDonation;
   $('#saveExpense').onclick = saveExpense;
@@ -2941,6 +2942,23 @@ async function refreshAdmin() {
     ]);
 
     await loadConstitutionStatus();
+    const monthlyDueSnap = await getDoc(
+  doc(db, 'publicFinance', 'settings')
+);
+
+const monthlyDue = monthlyDueSnap.exists()
+  ? Number(monthlyDueSnap.data().monthlyDue || 0)
+  : 0;
+
+$('#monthlyDueSetting').value = monthlyDue || '';
+
+if (!$('#dueAmount').value) {
+  $('#dueAmount').value = monthlyDue || '';
+}
+
+if (!$('#payAmount').value) {
+  $('#payAmount').value = monthlyDue || '';
+}
 
     const members = users.filter(u => u.status === 'approved');
     const pending = users.filter(u => u.status === 'pending');
