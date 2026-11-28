@@ -2504,6 +2504,23 @@ async function adminView() {
 </div>
 
       <div data-page="finance" hidden>
+
+      <section class="panel">
+  <h2 class="heading-green">মাসিক চাঁদার নির্ধারিত টাকা</h2>
+
+  <label>প্রতি মাসে একজন সদস্যের চাঁদা (টাকা)</label>
+  <input
+    id="monthlyDueSetting"
+    type="number"
+    min="100"
+    max="5000"
+    placeholder="যেমন: ২০০"
+  >
+
+  <button class="primary" id="saveMonthlyDueSetting">
+    মাসিক চাঁদা সংরক্ষণ করুন
+  </button>
+</section>
         <section class="panel">
           <h2 class="heading-green">মাসিক চাঁদা নির্ধারণ</h2>
           <label>সদস্য নির্বাচন</label>
@@ -3331,6 +3348,28 @@ async function assignOldMemberNumbers() {
   }
 }
 
+async function saveMonthlyDueSetting() {
+  try {
+    const amount = Number($('#monthlyDueSetting').value);
+
+    if (!Number.isFinite(amount) || amount < 100 || amount > 5000) {
+      throw new Error('মাসিক চাঁদা ১০০ থেকে ৫,০০০ টাকার মধ্যে দিন।');
+    }
+
+    await setDoc(doc(db, 'publicFinance', 'settings'), {
+      monthlyDue: amount,
+      updatedAt: serverTimestamp(),
+      updatedBy: currentUser.uid
+    }, { merge: true });
+
+    $('#dueAmount').value = amount;
+    $('#payAmount').value = amount;
+
+    alert('মাসিক চাঁদার নির্ধারিত টাকা সংরক্ষণ হয়েছে।');
+  } catch (error) {
+    alert(error.message);
+  }
+}
 
 /* DUES AND PAYMENTS */
 
