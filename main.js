@@ -2227,25 +2227,19 @@ async function memberView() {
       };
 
       prayerTimes.innerHTML = `
-        <div class="tiles">
-          <article>🌙 সেহরি শেষ<b>${format12Hour(times.Fajr)}</b></article>
-          <article>🌅 ফজর<b>${format12Hour(times.Fajr)}</b></article>
-          <article>☀️ সূর্যোদয়<b>${format12Hour(times.Sunrise)}</b></article>
-          <article>🕛 যোহর<b>${format12Hour(times.Dhuhr)}</b></article>
-          <article>🌤️ আসর<b>${format12Hour(times.Asr)}</b></article>
-          <article>🌇 মাগরিব<b>${format12Hour(times.Maghrib)}</b></article>
-          <article>🌙 এশা<b>${format12Hour(times.Isha)}</b></article>
-        </div>
-      `;
+  <div class="tiles">
+    <article><span>🌙 সেহরি শেষ</span><b>${format12Hour(times.Fajr)}</b></article>
+    <article><span>🌅 ফজর</span><b>${format12Hour(times.Fajr)}</b></article>
+    <article><span>☀️ সূর্যোদয়</span><b>${format12Hour(times.Sunrise)}</b></article>
+    <article><span>🕛 যোহর</span><b>${format12Hour(times.Dhuhr)}</b></article>
+    <article><span>🌤️ আসর</span><b>${format12Hour(times.Asr)}</b></article>
+    <article><span>🌇 মাগরিব</span><b>${format12Hour(times.Maghrib)}</b></article>
+    <article><span>🌙 এশা</span><b>${format12Hour(times.Isha)}</b></article>
+  </div>
+`;
 
-      iftarTime.textContent =
-        '🌙 আজকের ইফতারের সময়: ' + format12Hour(times.Maghrib);
-    } catch (error) {
-      console.error('PRAYER TIME ERROR:', error);
-      prayerTimes.textContent =
-        'নামাজের সময় লোড হয়নি। আবার চেষ্টা করুন।';
-    }
-  }
+iftarTime.textContent =
+  '🌙 আজকের ইফতারের সময়: ' + format12Hour(times.Maghrib);
 
   function detectPrayerLocation() {
     const prayerLocation = $('#prayerLocation');
