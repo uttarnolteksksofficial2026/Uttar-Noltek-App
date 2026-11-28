@@ -2273,15 +2273,15 @@ async function memberView() {
   $('#detectLocation').onclick = detectPrayerLocation;
 
   console.log('ID CARD FUNCTION STARTED');
+try {
+  await setupMemberIdCard(profile);
+} catch (error) {
+  console.error('MEMBER ID CARD ERROR:', error);
+  $('#memberIdCard').innerHTML =
+    '<p>আইডি কার্ড লোড করা যায়নি।</p>';
+}
 
-  try {
-    await setupMemberIdCard(profile);
-  } catch (error) {
-    console.error('MEMBER ID CARD ERROR:', error);
-    $('#memberIdCard').innerHTML =
-      '<p>আইডি কার্ড লোড করা যায়নি।</p>';
-    bindLogout();
-  }
+bindLogout();
 }
 
 /* ADMIN DASHBOARD */
