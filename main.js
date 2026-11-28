@@ -3849,3 +3849,85 @@ onAuthStateChanged(auth, async user => {
     $('#errorLogout').onclick = () => signOut(auth);
   }
 });
+
+async function showPublicVerification(uid) {
+  const app = document.getElementById('app') || document.body;
+
+  const escHtml = (value) => String(value || '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+
+  app.innerHTML = `
+    <div style="max-width:480px;margin:30px auto;padding:20px;text-align:center;font-family:Arial,sans-serif">
+      <img src="/logo.png" style="width:85px;height:85px;object-fit:contain">
+      <h2>সদস্য পরিচয় যাচাই</h2>
+      <p>তথ্য লোড হচ্ছে...</p>
+    </div>`;
+
+  try {
+    if (!uid) throw new Error('সদস্যের পরিচয় পাওয়া যায়নি');
+
+    const snap = await getDoc(doc(db, 'publicVerification', uid));
+
+    if (!snap.exists()) {
+      throw new Error('এই সদস্যের যাচাই তথ্য পাওয়া যায়নি');
+    }
+
+    const member = snap.data();
+
+    const status = String(member.status || 'pending');
+    const statusText = {
+      approved: 'অনুমোদিত সদস্য',
+      pending: 'অনুমোদনের অপেক্ষায়',
+      inactive: 'নিষ্ক্রিয় সদস্য',
+      rejected: 'আবেদন বাতিল'
+    }[status] || status;
+
+    const photo = member.photoData || '';
+
+    app.innerHTML = `
+      <div style="max-width:480px;margin:25px auto;padding:22px;border:1px solid #ddd;border-radius:15px;text-align:center;font-family:Arial,sans-serif;background:#fff;box-shadow:0 3px 12px #0001">
+        <img src="/logo.png" style="width:85px;height:85px;object-fit:contain">
+        <h2 style="margin:10px 0">উত্তর নলটেক সমাজকল্যাণ সংগঠন</h2>
+        <h3 style="color:#167345">সদস্য পরিচয় যাচাই</h3>
+
+        ${photo ? `
+          <img src="${photo}" alt="সদস্যের ছবি"
+            style="width:125px;height:145px;object-fit:cover;border:2px solid #ddd;border-radius:8px;margin:15px auto">
+        ` : `
+          <div style="width:125px;height:145px;margin:15px auto;background:#eee;display:flex;align-items:center;justify-content:center">
+            ছবি নেই
+          </div>
+        `}
+
+        <div style="text-align:left;line-height:2.1">
+          <p><b>নাম:</b> ${escHtml(member.fullName)}</p>
+          <p><b>সদস্য নম্বর:</b> ${escHtml(member.memberNumber)}</p>
+          <p><b>ঠিকানা:</b> ${escHtml(member.address)}</p>
+          <p><b>সদস্যপদ:</b>
+            <span style="color:${status === 'approved' ? 'green' : 'red'};font-weight:bold">
+              ${escHtml(statusText)}
+            </span>
+          </p>
+        </div>
+
+        <p style="font-size:12px;color:#777;margin-top:20px">
+          এটি সংগঠনের পাবলিক সদস্য যাচাই পৃষ্ঠা।
+        </p>
+      </div>
+    `;
+  } catch (error) {
+    app.innerHTML = `
+      <div style="max-width:450px;margin:40px auto;padding:25px;text-align:center;font-family:Arial">
+        <h2>যাচাই করা যায়নি</h2>
+        <p>${escHtml(error.message || 'তথ্য লোড করতে সমস্যা হয়েছে')}</p>
+      </div>
+    `;
+  }
+}
+
+
