@@ -2020,27 +2020,37 @@ async function memberView() {
     button.disabled = true;
     message.textContent = 'ছবি প্রস্তুত হচ্ছে...';
 
-    try {
-      const bitmap = await createImageBitmap(file);
-      const canvas = document.createElement('canvas');
-      const maxDimension = 1200;
+    let bitmap = null;
 
-      let scale = Math.min(
+    try {
+      bitmap = await createImageBitmap(file);
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      if (!context) {
+        throw new Error('ছবি প্রস্তুত করা যাচ্ছে না।');
+      }
+
+      const maxDimension = 1000;
+      const scale = Math.min(
         1,
         maxDimension / Math.max(bitmap.width, bitmap.height)
       );
 
-      canvas.width = Math.round(bitmap.width * scale);
-      canvas.height = Math.round(bitmap.height * scale);
-
-      const context = canvas.getContext('2d');
-      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      bitmap.close();
-
+      let width = Math.round(bitmap.width * scale);
+      let height = Math.round(bitmap.height * scale);
       let blob = null;
-      let quality = 0.82;
 
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 10; i++) {
+        canvas.width = width;
+        canvas.height = height;
+
+        context.clearRect(0, 0, width, height);
+        context.drawImage(bitmap, 0, 0, width, height);
+
+        const quality = Math.max(0.4, 0.82 - i * 0.06);
+
         blob = await new Promise(resolve => {
           canvas.toBlob(resolve, 'image/jpeg', quality);
         });
@@ -2049,29 +2059,26 @@ async function memberView() {
           throw new Error('ছবি কমপ্রেস করা যায়নি।');
         }
 
-        if (blob.size <= 350 * 1024) break;
-
-        quality -= 0.07;
-
-        if (quality < 0.45) {
-          quality = 0.65;
-          canvas.width = Math.round(canvas.width * 0.8);
-          canvas.height = Math.round(canvas.height * 0.8);
-          context.drawImage(
-            document.createElement('canvas'),
-            0, 0, canvas.width, canvas.height
-          );
+        if (blob.size <= 300 * 1024) {
+          break;
         }
+
+        width = Math.round(width * 0.85);
+        height = Math.round(height * 0.85);
       }
 
-      if (!blob || blob.size > 350 * 1024) {
-        throw new Error('ছবির সাইজ আরও কমিয়ে চেষ্টা করুন।');
+      if (!blob || blob.size > 300 * 1024) {
+        throw new Error('ছবির সাইজ কমানো যায়নি। অন্য ছবি চেষ্টা করুন।');
       }
 
       const photoData = await new Promise((resolve, reject) => {
         const reader = new FileReader();
+
         reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error('ছবি পড়া যায়নি।'));
+        reader.onerror = () => reject(
+          new Error('ছবি পড়া যায়নি।')
+        );
+
         reader.readAsDataURL(blob);
       });
 
@@ -2094,8 +2101,11 @@ async function memberView() {
 
     } catch (error) {
       console.error('PHOTO UPLOAD ERROR:', error);
-      message.textContent = 'ছবি সংরক্ষণ করা যায়নি: ' + error.message;
+      message.textContent =
+        'ছবি সংরক্ষণ করা যায়নি: ' + error.message;
+
     } finally {
+      if (bitmap) bitmap.close();
       button.disabled = false;
     }
   };
