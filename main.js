@@ -1208,7 +1208,7 @@ async function setupMemberIdCard(profile = {}) {
   const member = {
     name: p.fullName || 'নাম পাওয়া যায়নি',
     photo: p.photoURL || '/logo.png',
-    id: p.memberId || user.uid.slice(0, 8).toUpperCase(),
+    id: p.memberNumber || 'নম্বর বরাদ্দ হয়নি',
     phone: p.phone || user.phoneNumber || 'তথ্য নেই',
     blood: p.bloodGroup || 'তথ্য নেই',
     occupation: p.occupation || 'তথ্য নেই',
