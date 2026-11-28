@@ -2240,6 +2240,12 @@ async function memberView() {
 
 iftarTime.textContent =
   '🌙 আজকের ইফতারের সময়: ' + format12Hour(times.Maghrib);
+          } catch (error) {
+      console.error('PRAYER TIME ERROR:', error);
+      prayerTimes.textContent =
+        'নামাজের সময় লোড হয়নি। আবার চেষ্টা করুন।';
+    }
+  }
 
   function detectPrayerLocation() {
     const prayerLocation = $('#prayerLocation');
