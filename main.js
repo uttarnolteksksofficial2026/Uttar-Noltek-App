@@ -1995,6 +1995,7 @@ async function memberView() {
     }
   };
 
+
   $('#uploadProfilePhoto').onclick = async () => {
     const photoInput = $('#profilePhotoInput');
     const button = $('#uploadProfilePhoto');
@@ -2011,54 +2012,94 @@ async function memberView() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      message.textContent = 'ছবির সাইজ ৫ MB-এর কম হতে হবে।';
+    if (file.size > 10 * 1024 * 1024) {
+      message.textContent = 'ছবির সাইজ ১০ MB-এর কম হতে হবে।';
       return;
     }
 
     button.disabled = true;
-    message.textContent = 'ছবি আপলোড হচ্ছে...';
+    message.textContent = 'ছবি প্রস্তুত হচ্ছে...';
 
     try {
-      const photoRef = ref(
-        storage,
-        `profilePhotos/${currentUser.uid}/${Date.now()}`
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement('canvas');
+      const maxDimension = 1200;
+
+      let scale = Math.min(
+        1,
+        maxDimension / Math.max(bitmap.width, bitmap.height)
       );
 
-      const uploadTask = uploadBytesResumable(photoRef, file);
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
 
-      await new Promise((resolve, reject) => {
-        uploadTask.on(
-          'state_changed',
-          snapshot => {
-            const percent = Math.round(
-              snapshot.bytesTransferred / snapshot.totalBytes * 100
-            );
-            message.textContent = `ছবি আপলোড হচ্ছে... ${percent}%`;
-          },
-          reject,
-          resolve
-        );
+      const context = canvas.getContext('2d');
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+
+      let blob = null;
+      let quality = 0.82;
+
+      for (let i = 0; i < 7; i++) {
+        blob = await new Promise(resolve => {
+          canvas.toBlob(resolve, 'image/jpeg', quality);
+        });
+
+        if (!blob) {
+          throw new Error('ছবি কমপ্রেস করা যায়নি।');
+        }
+
+        if (blob.size <= 350 * 1024) break;
+
+        quality -= 0.07;
+
+        if (quality < 0.45) {
+          quality = 0.65;
+          canvas.width = Math.round(canvas.width * 0.8);
+          canvas.height = Math.round(canvas.height * 0.8);
+          context.drawImage(
+            document.createElement('canvas'),
+            0, 0, canvas.width, canvas.height
+          );
+        }
+      }
+
+      if (!blob || blob.size > 350 * 1024) {
+        throw new Error('ছবির সাইজ আরও কমিয়ে চেষ্টা করুন।');
+      }
+
+      const photoData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('ছবি পড়া যায়নি।'));
+        reader.readAsDataURL(blob);
       });
 
-      const photoURL = await getDownloadURL(uploadTask.snapshot.ref);
+      message.textContent = 'ছবি সংরক্ষণ হচ্ছে...';
 
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        photoURL,
-        updatedAt: serverTimestamp()
+      const photoRef = doc(db, 'memberPhotos', currentUser.uid);
+
+      await runTransaction(db, async transaction => {
+        transaction.set(photoRef, {
+          photoData,
+          updatedAt: serverTimestamp()
+        });
       });
 
-      profile.photoURL = photoURL;
-      $('#profilePhoto').src = photoURL;
+      profile.photoURL = photoData;
+      $('#profilePhoto').src = photoData;
+
       message.textContent = 'প্রোফাইল ছবি পরিবর্তন হয়েছে।';
       photoInput.value = '';
+
     } catch (error) {
       console.error('PHOTO UPLOAD ERROR:', error);
-      message.textContent = 'ছবি আপলোড করা যায়নি: ' + error.message;
+      message.textContent = 'ছবি সংরক্ষণ করা যায়নি: ' + error.message;
     } finally {
       button.disabled = false;
     }
   };
+
 
   let directoryMembers = [];
 
