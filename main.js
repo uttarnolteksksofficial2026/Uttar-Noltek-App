@@ -2319,6 +2319,8 @@ function detectPrayerLocation() {
 
 
   $('#detectLocation').onclick = detectPrayerLocation;
+  
+  detectPrayerLocation();
 
   console.log('ID CARD FUNCTION STARTED');
 try {
