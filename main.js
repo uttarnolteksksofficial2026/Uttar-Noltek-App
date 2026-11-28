@@ -2948,23 +2948,57 @@ async function refreshAdmin() {
   }
 } 
 async function changeStatus(uid, status) {
+
+async function changeStatus(uid, status) {
   try {
+    if (status === 'approved') {
+      const users = await getList('users');
+
+      const members = users
+        .filter(member =>
+          member.role !== 'admin' &&
+          (member.status === 'approved' || member.id === uid)
+        )
+        .sort((a, b) => {
+          const dateA = a.createdAt?.toDate
+            ? a.createdAt.toDate().getTime()
+            : new Date(a.createdAt || 0).getTime();
+
+          const dateB = b.createdAt?.toDate
+            ? b.createdAt.toDate().getTime()
+            : new Date(b.createdAt || 0).getTime();
+
+          return dateA - dateB;
+        });
+
+      let nextNumber = members.reduce((max, member) => {
+        const number = Number(member.memberNumber);
+        return Number.isInteger(number) ? Math.max(max, number) : max;
+      }, 0) + 1;
+
+      for (const member of members) {
+        if (!member.memberNumber) {
+          const memberNumber = String(nextNumber).padStart(3, '0');
+
+          await updateDoc(doc(db, 'users', member.id), {
+            memberNumber
+          });
+
+          member.memberNumber = memberNumber;
+          nextNumber++;
+        }
+      }
+    }
+
     await updateDoc(doc(db, 'users', uid), { status });
+
     alert('সদস্যের অবস্থা পরিবর্তন হয়েছে।');
     await refreshAdmin();
+
   } catch (error) {
+    console.error('MEMBER NUMBER ERROR:', error);
     alert('পরিবর্তন করা যায়নি: ' + error.message);
   }
-}
-
-function selectedMember(id) {
-  const select = $(id);
-  const uid = select.value;
-  const phone = select.selectedOptions[0]?.dataset.phone || '';
-
-  if (!uid) throw new Error('সদস্য নির্বাচন করুন।');
-
-  return { uid, phone };
 }
 
 /* DUES AND PAYMENTS */
