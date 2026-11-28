@@ -2469,6 +2469,11 @@ async function adminView() {
           <h2 class="heading-blue">আর্থিক হিসাবের সংক্ষিপ্ত বিবরণ</h2>
           <div id="financeReport">লোড হচ্ছে...</div>
         </section>
+        <section class="panel">
+  <h2 class="heading-purple">আর্থিক রেকর্ড এডিট ও রিসিট</h2>
+  <p>চাঁদা, জমা, অনুদান ও খরচের তথ্য এখানে দেখা ও এডিট করা যাবে।</p>
+  <div id="adminFinanceRecords">আর্থিক রেকর্ড লোড হচ্ছে...</div>
+</section>
       </div>
 
       <div data-page="members" hidden>
@@ -2940,7 +2945,287 @@ async function ensureDefaultConstitution(items) {
 
 /* ADMIN DATA */
 
+async function editAdminMember(uid) {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
 
+    if (!snap.exists()) {
+      throw new Error('সদস্যের তথ্য পাওয়া যায়নি।');
+    }
+
+    const member = snap.data();
+
+    const fullName = prompt(
+      'সদস্যের নাম:',
+      member.fullName || member.name || ''
+    );
+    if (fullName === null) return;
+
+    const phone = prompt(
+      'মোবাইল নম্বর:',
+      member.phone || ''
+    );
+    if (phone === null) return;
+
+    const address = prompt(
+      'ঠিকানা:',
+      member.address || ''
+    );
+    if (address === null) return;
+
+    const bloodGroup = prompt(
+      'রক্তের গ্রুপ:',
+      member.bloodGroup || ''
+    );
+    if (bloodGroup === null) return;
+
+    const occupation = prompt(
+      'পেশা:',
+      member.occupation || ''
+    );
+    if (occupation === null) return;
+
+    const updatedData = {
+      fullName: fullName.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      bloodGroup: bloodGroup.trim(),
+      occupation: occupation.trim(),
+      updatedAt: serverTimestamp(),
+      updatedBy: currentUser.uid
+    };
+
+    await updateDoc(doc(db, 'users', uid), updatedData);
+
+    await setDoc(
+      doc(db, 'publicMembers', uid),
+      {
+        ...updatedData,
+        status: member.status || 'approved'
+      },
+      { merge: true }
+    );
+
+    alert('সদস্যের তথ্য আপডেট হয়েছে।');
+
+    await refreshAdmin();
+
+  } catch (error) {
+    alert('সদস্যের তথ্য এডিট করা যায়নি: ' + error.message);
+  }
+}
+
+function renderAdminFinanceRecords(
+  dues,
+  payments,
+  donations,
+  expenses
+) {
+  const box = $('#adminFinanceRecords');
+  if (!box) return;
+
+  const records = [
+    ...dues.map(x => ({ ...x, kind: 'dues' })),
+    ...payments.map(x => ({ ...x, kind: 'payments' })),
+    ...donations.map(x => ({ ...x, kind: 'donations' })),
+    ...expenses.map(x => ({ ...x, kind: 'expenses' }))
+  ];
+
+  if (!records.length) {
+    box.innerHTML = 'কোনো আর্থিক রেকর্ড নেই।';
+    return;
+  }
+
+  const labels = {
+    dues: 'নির্ধারিত চাঁদা',
+    payments: 'চাঁদা জমা',
+    donations: 'অনুদান',
+    expenses: 'খরচ'
+  };
+
+  box.innerHTML = records.map(item => {
+    const title =
+      item.kind === 'dues'
+        ? item.memberPhone || item.memberUid || 'সদস্য'
+        : item.kind === 'payments'
+          ? item.memberName || item.memberPhone || 'সদস্য'
+          : item.kind === 'donations'
+            ? item.donor || 'দাতা'
+            : item.purpose || 'খরচ';
+
+    return `
+      <div class="noticeitem">
+        <b>${escapeHTML(labels[item.kind])}</b>
+        <p>${escapeHTML(title)}</p>
+        <p>মাস / তারিখ:
+          ${escapeHTML(item.month || item.date || '')}
+        </p>
+        <p>পরিমাণ: ${money(item.amount)}</p>
+
+        ${
+          item.kind === 'payments'
+            ? `
+              <p>রশিদ: ${escapeHTML(receiptNumber(item))}</p>
+              <button class="primary"
+                data-admin-receipt="${escapeHTML(item.id)}">
+                রিসিট দেখুন / প্রিন্ট
+              </button>
+            `
+            : ''
+        }
+
+        <button class="secondary"
+          data-edit-finance="${escapeHTML(item.kind)}"
+          data-finance-id="${escapeHTML(item.id)}">
+          এডিট
+        </button>
+
+        <button class="secondary"
+          data-delete-finance="${escapeHTML(item.kind)}"
+          data-finance-id="${escapeHTML(item.id)}">
+          মুছে ফেলুন
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  box.querySelectorAll('[data-edit-finance]').forEach(button => {
+    button.onclick = () => editAdminFinanceRecord(
+      button.dataset.editFinance,
+      button.dataset.financeId
+    );
+  });
+
+  box.querySelectorAll('[data-delete-finance]').forEach(button => {
+    button.onclick = () => deleteAdminFinanceRecord(
+      button.dataset.deleteFinance,
+      button.dataset.financeId
+    );
+  });
+
+  box.querySelectorAll('[data-admin-receipt]').forEach(button => {
+    button.onclick = async () => {
+      const payment = payments.find(
+        p => p.id === button.dataset.adminReceipt
+      );
+
+      if (payment) openReceipt(payment);
+    };
+  });
+}
+
+
+async function editAdminFinanceRecord(kind, id) {
+  try {
+    const snap = await getDoc(doc(db, kind, id));
+
+    if (!snap.exists()) {
+      throw new Error('রেকর্ড পাওয়া যায়নি।');
+    }
+
+    const data = snap.data();
+    const updated = {};
+
+    if (kind === 'dues') {
+      const month = prompt('চাঁদার মাস:', data.month || '');
+      if (month === null) return;
+
+      const amount = prompt('চাঁদার পরিমাণ:', data.amount || '');
+      if (amount === null) return;
+
+      updated.month = month.trim();
+      updated.amount = Number(amount);
+
+    } else if (kind === 'payments') {
+      const month = prompt('জমার মাস:', data.month || '');
+      if (month === null) return;
+
+      const amount = prompt('জমার পরিমাণ:', data.amount || '');
+      if (amount === null) return;
+
+      const method = prompt(
+        'জমার মাধ্যম:',
+        data.method || 'নগদ'
+      );
+      if (method === null) return;
+
+      updated.month = month.trim();
+      updated.amount = Number(amount);
+      updated.method = method.trim();
+
+    } else if (kind === 'donations') {
+      const donor = prompt('দাতার নাম:', data.donor || '');
+      if (donor === null) return;
+
+      const amount = prompt('অনুদানের পরিমাণ:', data.amount || '');
+      if (amount === null) return;
+
+      const purpose = prompt(
+        'অনুদানের উদ্দেশ্য:',
+        data.purpose || ''
+      );
+      if (purpose === null) return;
+
+      updated.donor = donor.trim();
+      updated.amount = Number(amount);
+      updated.purpose = purpose.trim();
+
+    } else if (kind === 'expenses') {
+      const purpose = prompt(
+        'খরচের বিবরণ:',
+        data.purpose || ''
+      );
+      if (purpose === null) return;
+
+      const amount = prompt('খরচের পরিমাণ:', data.amount || '');
+      if (amount === null) return;
+
+      const date = prompt('খরচের তারিখ (YYYY-MM-DD):', data.date || '');
+      if (date === null) return;
+
+      updated.purpose = purpose.trim();
+      updated.amount = Number(amount);
+      updated.date = date.trim();
+    }
+
+    if (
+      !Number.isFinite(updated.amount) ||
+      updated.amount <= 0
+    ) {
+      throw new Error('সঠিক টাকার পরিমাণ দিন।');
+    }
+
+    updated.updatedAt = serverTimestamp();
+    updated.updatedBy = currentUser.uid;
+
+    await updateDoc(doc(db, kind, id), updated);
+
+    alert('আর্থিক রেকর্ড আপডেট হয়েছে।');
+
+    await refreshAdmin();
+
+  } catch (error) {
+    alert('এডিট করা যায়নি: ' + error.message);
+  }
+}
+
+
+async function deleteAdminFinanceRecord(kind, id) {
+  if (!confirm('এই আর্থিক রেকর্ডটি স্থায়ীভাবে মুছে ফেলতে চান?')) {
+    return;
+  }
+
+  try {
+    await deleteDoc(doc(db, kind, id));
+
+    alert('রেকর্ড মুছে ফেলা হয়েছে।');
+
+    await refreshAdmin();
+
+  } catch (error) {
+    alert('রেকর্ড মুছতে সমস্যা হয়েছে: ' + error.message);
+  }
+}
 
 async function refreshAdmin() {
   try {
@@ -3071,6 +3356,13 @@ await setDoc(doc(db, 'publicFinance', 'summary'), {
               <p>ভূমিকা: ${escapeHTML(u.role || 'member')}</p>
 
               <button
+  class="primary"
+  data-edit-member="${escapeHTML(memberId)}"
+>
+  সদস্যের তথ্য এডিট
+</button>
+
+                <button
                 class="secondary"
                 data-deactivate="${escapeHTML(memberId)}"
               >
@@ -3082,6 +3374,12 @@ await setDoc(doc(db, 'publicFinance', 'summary'), {
       : 'কোনো অনুমোদিত সদস্য নেই।';
 
     // সদস্য নিষ্ক্রিয় করার বাটন
+
+    document.querySelectorAll('#memberList [data-edit-member]')
+  .forEach(button => {
+    button.onclick = () =>
+      editAdminMember(button.dataset.editMember);
+  });
     document.querySelectorAll('#memberList [data-deactivate]').forEach(button => {
       button.onclick = async () => {
         const id = button.dataset.deactivate;
@@ -3146,6 +3444,12 @@ await setDoc(doc(db, 'publicFinance', 'summary'), {
 
     $('#financeReport').innerHTML = report;
     $('#financeReport2').innerHTML = report;
+    renderAdminFinanceRecords(
+  dues,
+  payments,
+  donations,
+  expenses
+);
 
     // নিয়ম-কানুন
     renderAdminRules(rules);
