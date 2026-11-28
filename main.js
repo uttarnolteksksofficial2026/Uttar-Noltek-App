@@ -1619,9 +1619,19 @@ async function setupMemberIdCard(profile = {}) {
             </div>
 
             <div class="un-info">
-              <span>রক্তের গ্রুপ</span>
-              <span class="colon">:</span>
-              <span class="value">${safe(member.blood)}</span>
+  <span>রক্তের গ্রুপ</span>
+  <span class="colon">:</span>
+  <span class="value">${safe(({
+    'O+': 'ও পজিটিভ',
+    'O-': 'ও নেগেটিভ',
+    'A+': 'এ পজিটিভ',
+    'A-': 'এ নেগেটিভ',
+    'B+': 'বি পজিটিভ',
+    'B-': 'বি নেগেটিভ',
+    'AB+': 'এবি পজিটিভ',
+    'AB-': 'এবি নেগেটিভ'
+  })[member.blood] || member.blood || 'উল্লেখ নেই')}</span>
+</div>
 
               <span>পেশা</span>
               <span class="colon">:</span>
