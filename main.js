@@ -2247,28 +2247,76 @@ iftarTime.textContent =
     }
   }
 
-  function detectPrayerLocation() {
-    const prayerLocation = $('#prayerLocation');
-    prayerLocation.textContent = 'লোকেশন শনাক্ত হচ্ছে...';
+  
+function detectPrayerLocation() {
+  const prayerLocation = $('#prayerLocation');
 
-    if (!navigator.geolocation) {
-      prayerLocation.textContent =
-        'আপনার ব্রাউজারে লোকেশন সুবিধা নেই।';
-      return;
+  // আগে সংরক্ষিত লোকেশন আছে কি না দেখুন
+  try {
+    const savedLocation = localStorage.getItem('prayerLocationCoords');
+
+    if (savedLocation) {
+      const coords = JSON.parse(savedLocation);
+
+      if (
+        typeof coords.latitude === 'number' &&
+        typeof coords.longitude === 'number'
+      ) {
+        prayerLocation.textContent = 'সংরক্ষিত লোকেশন ব্যবহার হচ্ছে...';
+
+        loadPrayerTimes(
+          coords.latitude,
+          coords.longitude
+        );
+
+        return;
+      }
     }
-
-    navigator.geolocation.getCurrentPosition(
-      position => loadPrayerTimes(
-        position.coords.latitude,
-        position.coords.longitude
-      ),
-      () => {
-        prayerLocation.textContent =
-          'লোকেশন অনুমতি দিন অথবা HTTPS সাইটে খুলুন।';
-      },
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
+  } catch (error) {
+    console.error('SAVED LOCATION ERROR:', error);
   }
+
+  prayerLocation.textContent = 'প্রথমবার লোকেশন শনাক্ত হচ্ছে...';
+
+  if (!navigator.geolocation) {
+    prayerLocation.textContent =
+      'আপনার ব্রাউজারে লোকেশন সুবিধা নেই।';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+
+      // লোকেশন ব্রাউজারে সংরক্ষণ করুন
+      try {
+        localStorage.setItem(
+          'prayerLocationCoords',
+          JSON.stringify({
+            latitude: latitude,
+            longitude: longitude
+          })
+        );
+      } catch (error) {
+        console.error('LOCATION SAVE ERROR:', error);
+      }
+
+      prayerLocation.textContent = 'লোকেশন সংরক্ষিত হয়েছে।';
+
+      loadPrayerTimes(latitude, longitude);
+    },
+    () => {
+      prayerLocation.textContent =
+        'লোকেশন অনুমতি দিন অথবা HTTPS সাইটে খুলুন।';
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000
+    }
+  );
+}
+
 
   $('#detectLocation').onclick = detectPrayerLocation;
 
