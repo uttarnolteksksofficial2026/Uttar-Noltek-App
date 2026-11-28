@@ -2093,8 +2093,10 @@ async function memberView() {
     const users = await getList('publicMembers');
 
     directoryMembers = users.filter(member =>
-      member.status === 'approved' && member.role !== 'admin'
-    );
+  member.status === 'approved' && member.role !== 'admin'
+).sort((a, b) =>
+  Number(a.memberNumber || 0) - Number(b.memberNumber || 0)
+);
 
     $('#memberDashboardCount').textContent =
       directoryMembers.length.toLocaleString('bn-BD');
