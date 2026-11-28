@@ -2437,6 +2437,27 @@ async function adminView() {
           <p>সংগঠনের সকল কার্যক্রম পরিচালনা করুন।</p>
         </section>
 
+<section class="panel" style="
+  text-align:center;
+  background:linear-gradient(135deg,#087f46,#0aa86b);
+  color:white;
+  padding:28px 15px;
+">
+  <div style="font-size:18px;font-weight:700">
+    মোট অনুমোদিত সদস্য
+  </div>
+
+  <div id="memberCountHero" style="
+    font-size:52px;
+    font-weight:900;
+    line-height:1.3;
+  ">০</div>
+
+  <div style="font-size:14px">
+    উত্তর নলটেক সমাজ কল্যাণ সংগঠন
+  </div>
+</section>
+
         <section class="tiles">
           <article><b id="memberCount">০</b><span>মোট সদস্য</span></article>
           <article><b id="pendingCount">০</b><span>নতুন আবেদন</span></article>
@@ -2965,7 +2986,9 @@ if (!$('#payAmount').value) {
 
     $('#memberCount').textContent =
       members.length.toLocaleString('bn-BD');
-
+    
+$('#memberCountHero').textContent =
+  members.length.toLocaleString('bn-BD');
     $('#pendingCount').textContent =
       pending.length.toLocaleString('bn-BD');
 
@@ -3395,7 +3418,10 @@ async function saveDue() {
   try {
     const member = selectedMember('#dueMember');
     const month = $('#dueMonth').value;
-    const amount = Number($('#dueAmount').value);
+    const amount = Number(
+  $('#dueAmount').value ||
+  $('#monthlyDueSetting').value
+);
 
     if (!month || amount < 100 || amount > 5000) {
       throw new Error('মাস নির্বাচন করুন এবং ১০০ থেকে ৫,০০০ টাকার মধ্যে চাঁদা দিন।');
